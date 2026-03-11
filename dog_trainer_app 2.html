@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dog Trainer">
+<meta name="theme-color" content="#1a3a2a">
+<title>Dog Training Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #1a3a2a;
+    --sage: #4a7c5f;
+    --mint: #8bbfa0;
+    --cream: #f5f0e8;
+    --warm: #e8dcc8;
+    --gold: #c8a84b;
+    --success: #2d7a4f;
+    --failure: #8b3a3a;
+    --text: #1a2820;
+    --muted: #6b8070;
+    --card: #ffffff;
+    --border: #d4e4da;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: var(--forest);
+    padding: env(safe-area-inset-top, 44px) 20px 20px;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    letter-spacing: -0.3px;
+  }
+
+  .app-title span {
+    color: var(--mint);
+  }
+
+  .paw-icon { font-size: 26px; }
+
+  .dog-name-bar {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dog-name-bar label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--mint);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .dog-name-input {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .dog-name-input::placeholder { color: rgba(255,255,255,0.4); }
+  .dog-name-input:focus { border-color: var(--mint); }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    background: var(--forest);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 0 0 env(safe-area-inset-bottom, 0);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 8px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    color: rgba(255,255,255,0.45);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .tab.active { color: var(--mint); }
+  .tab-icon { font-size: 22px; display: block; }
+  .tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; display: block; margin-top: 2px; }
+
+  /* Main content */
+  .main {
+    padding: 16px 16px calc(80px + env(safe-area-inset-bottom, 0));
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* Session date bar */
+  .session-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+  }
+
+  .session-bar label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .session-date-input {
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* Skill cards */
+  .skill-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skill-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--border);
+    border-radius: 16px 0 0 16px;
+    transition: background 0.2s;
+  }
+
+  .skill-card.scored-success::before { background: var(--success); }
+  .skill-card.scored-failure::before { background: var(--failure); }
+
+  .skill-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .skill-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 19px;
+    letter-spacing: -0.2px;
+  }
+
+  .skill-number {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Score selector */
+  .score-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .score-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: var(--muted);
+  }
+
+  .score-btn.selected-success {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+  }
+
+  .score-btn.selected-failure {
+    background: var(--failure);
+    border-color: var(--failure);
+    color: white;
+  }
+
+  .score-btn:not(.selected-success):not(.selected-failure):hover {
+    border-color: var(--sage);
+    color: var(--sage);
+  }
+
+  /* Notes textarea */
+  .notes-area {
+    width: 100%;
+    min-height: 64px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    resize: none;
+    outline: none;
+    background: var(--cream);
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+
+  .notes-area::placeholder { color: var(--muted); }
+  .notes-area:focus { border-color: var(--sage); background: white; }
+
+  /* Save session button */
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    background: var(--forest);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    letter-spacing: 0.2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary:active { transform: scale(0.98); background: var(--sage); }
+
+  /* History screen */
+  .history-header {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    margin-bottom: 4px;
+  }
+
+  .history-subhead {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .session-record {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+
+  .session-record-header {
+    padding: 12px 16px;
+    background: var(--forest);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .session-record-dog {
+    font-family: 'DM Serif Display', serif;
+    font-size: 17px;
+  }
+
+  .session-record-date {
+    font-size: 12px;
+    color: var(--mint);
+    font-weight: 500;
+  }
+
+  .session-record-location {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    margin-top: 2px;
+  }
+
+  .session-record-body {
+    padding: 12px 16px;
+  }
+
+  .record-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+
+  .record-row:last-child { border-bottom: none; }
+
+  .record-skill { font-weight: 500; font-size: 14px; flex: 1; }
+
+  .record-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-success { background: #e8f5ee; color: var(--success); }
+  .badge-failure { background: #f5e8e8; color: var(--failure); }
+  .badge-none { background: var(--warm); color: var(--muted); }
+
+  .record-note { font-size: 12px; color: var(--muted); margin-top: 2px; font-style: italic; }
+
+  .delete-session-btn {
+    background: none;
+    border: none;
+    color: #c0c0c0;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 4px;
+    transition: color 0.2s;
+  }
+  .delete-session-btn:hover { color: var(--failure); }
+
+  /* Stats screen */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .stat-number {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    color: var(--forest);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .skill-stat-row {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .skill-stat-name {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  .skill-stat-bar-bg {
+    background: var(--warm);
+    border-radius: 4px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+
+  .skill-stat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--success);
+    transition: width 0.4s ease;
+  }
+
+  .skill-stat-counts {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--muted);
+  }
+
+  .empty-icon { font-size: 56px; margin-bottom: 12px; }
+  .empty-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); margin-bottom: 6px; }
+  .empty-text { font-size: 14px; line-height: 1.5; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--forest);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Add skill button */
+  .add-skill-btn {
+    width: 100%;
+    padding: 13px;
+    background: white;
+    color: var(--sage);
+    border: 1.5px dashed var(--sage);
+    border-radius: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .add-skill-btn:active { background: var(--cream); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
+    width: 100%;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  .modal-input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    outline: none;
+    color: var(--text);
+    margin-bottom: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .modal-input:focus { border-color: var(--sage); }
+
+  .modal-actions { display: flex; gap: 10px; }
+
+  .btn-secondary {
+    flex: 1;
+    padding: 13px;
+    background: var(--cream);
+    color: var(--text);
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-add {
+    flex: 2;
+    padding: 13px;
+    background: var(--forest);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+
+  .section-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* Weather card */
+  .weather-card {
+    background: linear-gradient(135deg, #1a3a2a 0%, #2d5a40 60%, #3d7a55 100%);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    color: white;
+  }
+
+  .weather-location {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: rgba(255,255,255,0.6);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .weather-main {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+
+  .weather-left { flex: 1; }
+
+  .weather-temp {
+    font-family: 'DM Serif Display', serif;
+    font-size: 52px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .weather-condition {
+    font-size: 14px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+
+  .weather-divider {
+    width: 1px;
+    height: 70px;
+    background: rgba(255,255,255,0.2);
+    margin: 0 16px;
+  }
+
+  .weather-right { flex: 1; }
+
+  .wind-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .wind-row:last-child { border-bottom: none; }
+
+  .wind-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--mint);
+  }
+
+  .wind-value {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .weather-training-tip {
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.85);
+    border-left: 3px solid var(--mint);
+    font-style: italic;
+  }
+
+
+  /* Location card */
+  .location-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+
+  .location-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .location-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--forest);
+    letter-spacing: 0.2px;
+  }
+
+  .location-refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .location-refresh-btn:active { background: var(--cream); }
+
+  .location-idle {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+
+  .location-address {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--forest);
+    margin-bottom: 2px;
+  }
+
+  .location-coords {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-family: monospace;
+    letter-spacing: 0.5px;
+  }
+
+  .location-detect-btn {
+    width: 100%;
+    padding: 11px;
+    background: var(--cream);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--forest);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .location-detect-btn.active {
+    background: var(--forest);
+    color: white;
+    border-color: var(--forest);
+  }
+
+  .location-detect-btn:active { opacity: 0.85; }
+
+  .location-note-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    background: var(--cream);
+    transition: border-color 0.2s;
+  }
+
+  .location-note-input:focus { border-color: var(--sage); background: white; }
+
+  .location-loading {
+    font-size: 13px;
+    color: var(--sage);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .location-error {
+    font-size: 13px;
+    color: var(--failure);
+    margin-bottom: 10px;
+  }
+
+  /* Export button */
+  .export-btn {
+    background: var(--forest);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.2px;
+    transition: all 0.2s;
+  }
+  .export-btn:active { background: var(--sage); }
+
+  /* PWA install banner */
+  .install-banner {
+    background: linear-gradient(135deg, var(--forest), var(--sage));
+    color: white;
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+  }
+
+  .install-icon { font-size: 28px; }
+  .install-text { flex: 1; }
+  .install-title { font-weight: 600; font-size: 14px; }
+  .install-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; line-height: 1.4; }
+  .install-close { background: none; border: none; color: white; opacity: 0.7; font-size: 18px; cursor: pointer; padding: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="app-title">Training <span>Tracks</span></div>
+    <span class="paw-icon">🐾</span>
+  </div>
+  <div class="dog-name-bar">
+    <label>Dog</label>
+    <input class="dog-name-input" id="dogName" type="text" placeholder="Enter dog's name…" autocomplete="off">
+  </div>
+</div>
+
+<!-- Screens -->
+<div class="main">
+
+  <!-- LOG SCREEN -->
+  <div class="screen active" id="screen-log">
+    <div id="installBanner" class="install-banner">
+      <span class="install-icon">📲</span>
+      <div class="install-text">
+        <div class="install-title">Add to iPhone Home Screen</div>
+        <div class="install-sub">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install this app</div>
+      </div>
+      <button class="install-close" onclick="document.getElementById('installBanner').remove()">✕</button>
+    </div>
+
+    <div class="session-bar">
+      <label>Session Date</label>
+      <input class="session-date-input" type="date" id="sessionDate">
+    </div>
+
+    <!-- Weather Widget -->
+    <div class="weather-card">
+      <div class="weather-location">📍 Sheboygan, WI · Session Conditions</div>
+      <div class="weather-main">
+        <div class="weather-left">
+          <div class="weather-temp">23°F</div>
+          <div class="weather-condition">🌨 Light Snow</div>
+        </div>
+        <div class="weather-divider"></div>
+        <div class="weather-right">
+          <div class="wind-row">
+            <span class="wind-label">WIND</span>
+            <span class="wind-value">NW 22 mph</span>
+          </div>
+          <div class="wind-row">
+            <span class="wind-label">GUSTS</span>
+            <span class="wind-value">35 mph</span>
+          </div>
+          <div class="wind-row">
+            <span class="wind-label">FEELS</span>
+            <span class="wind-value">0°F</span>
+          </div>
+        </div>
+      </div>
+      <div class="weather-training-tip">🌬️ Very windy — dogs may be distracted; keep sessions focused</div>
+    </div>
+
+
+    <!-- Location Widget -->
+    <div class="location-card">
+      <div class="location-header">
+        <div class="location-title">📍 Training Location</div>
+        <button class="location-refresh-btn" onclick="getLocation()" id="locationRefreshBtn">↻ Update</button>
+      </div>
+      <div id="locationStatus" class="location-idle">Tap to detect your current position</div>
+      <div id="locationDetails" style="display:none">
+        <div class="location-address" id="locationAddress"></div>
+        <div class="location-coords" id="locationCoords"></div>
+      </div>
+      <button class="location-detect-btn" id="locationDetectBtn" onclick="getLocation()">
+        <span id="locationBtnIcon">🎯</span> <span id="locationBtnText">Detect My Location</span>
+      </button>
+      <div id="locationNoteRow" style="display:none; margin-top:10px">
+        <input class="location-note-input" id="locationNote" type="text" placeholder="Add a spot name (e.g. North Field, Back Yard)…" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="section-title">Skills</div>
+    <div class="section-sub">Record scores for each skill</div>
+
+    <div id="skillCards"></div>
+
+    <button class="add-skill-btn" onclick="openAddSkill()">＋ Add Skill</button>
+
+    <button class="btn-primary" onclick="saveSession()">
+      💾 Save Session
+    </button>
+  </div>
+
+  <!-- HISTORY SCREEN -->
+  <div class="screen" id="screen-history">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+      <div class="history-header">History</div>
+      <button class="export-btn" onclick="exportToExcel()">⬇ Export xlsx</button>
+    </div>
+    <div class="history-subhead">All recorded training sessions</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- STATS SCREEN -->
+  <div class="screen" id="screen-stats">
+    <div class="history-header">Stats</div>
+    <div class="history-subhead">Performance overview</div>
+    <div id="statsContent"></div>
+  </div>
+
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab active" onclick="switchTab('log', this)">
+    <span class="tab-icon">✏️</span>
+    <span class="tab-label">Log</span>
+  </button>
+  <button class="tab" onclick="switchTab('history', this)">
+    <span class="tab-icon">📋</span>
+    <span class="tab-label">History</span>
+  </button>
+  <button class="tab" onclick="switchTab('stats', this)">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">Stats</span>
+  </button>
+</div>
+
+<!-- Add Skill Modal -->
+<div class="modal-overlay" id="addSkillModal">
+  <div class="modal">
+    <div class="modal-title">Add New Skill</div>
+    <input class="modal-input" id="newSkillName" type="text" placeholder="Skill name (e.g. Sit, Stay, Heel…)" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddSkill()">Cancel</button>
+      <button class="btn-add" onclick="confirmAddSkill()">Add Skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// Data
+const DEFAULT_SKILLS = ['Heeling', 'Remote Sit', 'Denials'];
+let skills = JSON.parse(localStorage.getItem('tt_skills') || 'null') || [...DEFAULT_SKILLS];
+let sessions = JSON.parse(localStorage.getItem('tt_sessions') || '[]');
+
+// Current log state: { skillName: { score: '1 Success'|'0 Failure'|null, notes: '' } }
+let currentLog = {};
+
+function initCurrentLog() {
+  currentLog = {};
+  skills.forEach(s => {
+    currentLog[s] = currentLog[s] || { score: null, notes: '' };
+  });
+}
+
+initCurrentLog();
+
+// Set today's date
+const dateInput = document.getElementById('sessionDate');
+dateInput.value = new Date().toISOString().split('T')[0];
+
+// Render skill cards
+function renderSkills() {
+  const container = document.getElementById('skillCards');
+  container.innerHTML = '';
+  skills.forEach((skill, i) => {
+    const log = currentLog[skill] || { score: null, notes: '' };
+    const cardClass = log.score === '1 Success' ? 'scored-success' : log.score === '0 Failure' ? 'scored-failure' : '';
+    container.innerHTML += `
+      <div class="skill-card ${cardClass}" id="card-${i}">
+        <div class="skill-header">
+          <div class="skill-name">${skill}</div>
+          <div class="skill-number">SKILL ${i+1}</div>
+        </div>
+        <div class="score-selector">
+          <button class="score-btn ${log.score === '1 Success' ? 'selected-success' : ''}" onclick="setScore(${i}, '1 Success')">
+            ✅ 1 Success
+          </button>
+          <button class="score-btn ${log.score === '0 Failure' ? 'selected-failure' : ''}" onclick="setScore(${i}, '0 Failure')">
+            ❌ 0 Failure
+          </button>
+        </div>
+        <textarea class="notes-area" placeholder="Notes (optional)…" onchange="setNotes(${i}, this.value)" oninput="setNotes(${i}, this.value)">${log.notes}</textarea>
+      </div>
+    `;
+  });
+}
+
+renderSkills();
+
+function setScore(idx, score) {
+  const skill = skills[idx];
+  if (currentLog[skill].score === score) {
+    currentLog[skill].score = null;
+  } else {
+    currentLog[skill].score = score;
+  }
+  renderSkills();
+}
+
+function setNotes(idx, val) {
+  currentLog[skills[idx]].notes = val;
+}
+
+function saveSession() {
+  const dogName = document.getElementById('dogName').value.trim() || 'Unnamed Dog';
+  const date = document.getElementById('sessionDate').value;
+
+  const records = skills.map(s => ({
+    skill: s,
+    score: currentLog[s]?.score || null,
+    notes: currentLog[s]?.notes || ''
+  }));
+
+  // Capture location snapshot
+  let locationSnap = null;
+  if (currentLocation) {
+    const addr = document.getElementById('locationAddress').textContent;
+    const note = document.getElementById('locationNote').value.trim();
+    locationSnap = {
+      address: addr,
+      spotName: note,
+      lat: currentLocation.lat,
+      lon: currentLocation.lon,
+      acc: currentLocation.acc
+    };
+  }
+
+  sessions.unshift({ id: Date.now(), dog: dogName, date, records, location: locationSnap });
+  localStorage.setItem('tt_sessions', JSON.stringify(sessions));
+
+  // Reset
+  initCurrentLog();
+  renderSkills();
+  document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
+
+  showToast('✅ Session saved!');
+}
+
+// History
+function renderHistory() {
+  const container = document.getElementById('historyList');
+  if (sessions.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">No sessions yet</div>
+      <div class="empty-text">Log your first training session using the Log tab</div>
+    </div>`;
+    return;
+  }
+  container.innerHTML = sessions.map((s, si) => `
+    <div class="session-record">
+      <div class="session-record-header">
+        <div>
+          <div class="session-record-dog">${s.dog}</div>
+          <div class="session-record-date">${formatDate(s.date)}</div>
+          ${s.location ? `<div class="session-record-location">📍 ${s.location.spotName || s.location.address || 'Location recorded'}</div>` : ''}
+        </div>
+        <button class="delete-session-btn" onclick="deleteSession(${si})">🗑</button>
+      </div>
+      <div class="session-record-body">
+        ${s.records.map(r => `
+          <div class="record-row">
+            <div>
+              <div class="record-skill">${r.skill}</div>
+              ${r.notes ? `<div class="record-note">${r.notes}</div>` : ''}
+            </div>
+            <span class="record-badge ${r.score === '1 Success' ? 'badge-success' : r.score === '0 Failure' ? 'badge-failure' : 'badge-none'}">
+              ${r.score || '—'}
+            </span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function deleteSession(idx) {
+  if (confirm('Delete this session?')) {
+    sessions.splice(idx, 1);
+    localStorage.setItem('tt_sessions', JSON.stringify(sessions));
+    renderHistory();
+    renderStats();
+  }
+}
+
+// Stats
+function renderStats() {
+  const container = document.getElementById('statsContent');
+  if (sessions.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">📊</div>
+      <div class="empty-title">No data yet</div>
+      <div class="empty-text">Complete some training sessions to see stats</div>
+    </div>`;
+    return;
+  }
+
+  const totalSessions = sessions.length;
+  const allRecords = sessions.flatMap(s => s.records);
+  const scored = allRecords.filter(r => r.score);
+  const successes = scored.filter(r => r.score === '1 Success').length;
+  const rate = scored.length > 0 ? Math.round(successes / scored.length * 100) : 0;
+
+  const skillStats = {};
+  skills.forEach(s => skillStats[s] = { success: 0, failure: 0 });
+  allRecords.forEach(r => {
+    if (!skillStats[r.skill]) skillStats[r.skill] = { success: 0, failure: 0 };
+    if (r.score === '1 Success') skillStats[r.skill].success++;
+    else if (r.score === '0 Failure') skillStats[r.skill].failure++;
+  });
+
+  container.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number">${totalSessions}</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${rate}%</div>
+        <div class="stat-label">Success Rate</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${successes}</div>
+        <div class="stat-label">Successes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number">${scored.length - successes}</div>
+        <div class="stat-label">Failures</div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-bottom:10px">By Skill</div>
+    ${Object.entries(skillStats).filter(([,v]) => v.success + v.failure > 0).map(([skill, v]) => {
+      const total = v.success + v.failure;
+      const pct = total > 0 ? Math.round(v.success / total * 100) : 0;
+      return `<div class="skill-stat-row">
+        <div class="skill-stat-name">${skill}</div>
+        <div class="skill-stat-bar-bg">
+          <div class="skill-stat-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="skill-stat-counts">
+          <span>${pct}% success</span>
+          <span>${v.success}✅ ${v.failure}❌</span>
+        </div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+// Add skill modal
+function openAddSkill() {
+  document.getElementById('addSkillModal').classList.add('open');
+  document.getElementById('newSkillName').focus();
+}
+
+function closeAddSkill() {
+  document.getElementById('addSkillModal').classList.remove('open');
+  document.getElementById('newSkillName').value = '';
+}
+
+function confirmAddSkill() {
+  const name = document.getElementById('newSkillName').value.trim();
+  if (!name) return;
+  if (skills.includes(name)) { showToast('Skill already exists'); return; }
+  skills.push(name);
+  currentLog[name] = { score: null, notes: '' };
+  localStorage.setItem('tt_skills', JSON.stringify(skills));
+  closeAddSkill();
+  renderSkills();
+  showToast(`✅ "${name}" added`);
+}
+
+document.getElementById('newSkillName').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmAddSkill();
+});
+
+// Tab switching
+function switchTab(tab, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  btn.classList.add('active');
+  if (tab === 'history') renderHistory();
+  if (tab === 'stats') renderStats();
+}
+
+// Toast
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [y, m, d] = dateStr.split('-');
+  return new Date(y, m-1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+
+// Location / GPS
+let currentLocation = null;
+
+async function getLocation() {
+  const status = document.getElementById('locationStatus');
+  const details = document.getElementById('locationDetails');
+  const btn = document.getElementById('locationDetectBtn');
+  const btnText = document.getElementById('locationBtnText');
+  const noteRow = document.getElementById('locationNoteRow');
+
+  if (!navigator.geolocation) {
+    status.className = 'location-error';
+    status.textContent = 'GPS not supported on this device';
+    status.style.display = 'block';
+    return;
+  }
+
+  status.className = 'location-loading';
+  status.textContent = '📡 Detecting your position…';
+  status.style.display = 'block';
+  details.style.display = 'none';
+  btn.classList.add('active');
+  btnText.textContent = 'Detecting…';
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      const acc = Math.round(pos.coords.accuracy);
+      currentLocation = { lat, lon, acc };
+
+      document.getElementById('locationCoords').textContent =
+        lat + '°N, ' + lon + '°W  ±' + acc + 'm';
+
+      // Reverse geocode with Nominatim (free, no key needed)
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+        const a = data.address || {};
+        const parts = [a.road, a.suburb || a.neighbourhood || a.hamlet, a.city || a.town || a.village].filter(Boolean);
+        document.getElementById('locationAddress').textContent =
+          parts.length ? parts.join(', ') : data.display_name.split(',[')[0];
+      } catch (e) {
+        document.getElementById('locationAddress').textContent = 'Location detected';
+      }
+
+      status.style.display = 'none';
+      details.style.display = 'block';
+      noteRow.style.display = 'block';
+      btn.classList.remove('active');
+      btnText.textContent = 'Update Location';
+    },
+    (err) => {
+      status.className = 'location-error';
+      const msgs = {
+        1: 'Location access denied — please allow in Settings',
+        2: 'Position unavailable — try again outside',
+        3: 'Timed out — try again'
+      };
+      status.textContent = '⚠️ ' + (msgs[err.code] || 'Could not get location');
+      btn.classList.remove('active');
+      btnText.textContent = 'Try Again';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+// Also store location in session save
+const _origSaveSession = saveSession;
+saveSession = function() {
+  _origSaveSession();
+};
+
+// Export to Excel - one tab per dog
+function exportToExcel() {
+  if (sessions.length === 0) { showToast('No sessions to export'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // Group sessions by dog name
+  const byDog = {};
+  sessions.forEach(s => {
+    const key = s.dog || 'Unnamed Dog';
+    if (!byDog[key]) byDog[key] = [];
+    byDog[key].push(s);
+  });
+
+  const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1A3A2A' } }, alignment: { horizontal: 'center' } };
+
+  Object.entries(byDog).forEach(([dog, dogSessions]) => {
+    const rows = [];
+
+    // Title row
+    rows.push([dog + ' — Training Log']);
+    rows.push([]); // blank
+
+    // Column headers
+    rows.push(['Date', 'Skill', 'Score', 'Notes', 'Location', 'Coordinates']);
+
+    // Data rows
+    dogSessions.forEach(session => {
+      const locStr = session.location
+        ? (session.location.spotName ? session.location.spotName + ' — ' : '') + (session.location.address || '')
+        : '';
+      const coordStr = session.location
+        ? session.location.lat + ', ' + session.location.lon
+        : '';
+
+      session.records.forEach((r, ri) => {
+        rows.push([
+          ri === 0 ? formatDate(session.date) : '',   // Date only on first skill row
+          r.skill,
+          r.score || '—',
+          r.notes || '',
+          ri === 0 ? locStr : '',
+          ri === 0 ? coordStr : ''
+        ]);
+      });
+      rows.push([]); // blank row between sessions
+    });
+
+    // Summary rows
+    const allRecords = dogSessions.flatMap(s => s.records).filter(r => r.score);
+    const successes = allRecords.filter(r => r.score === '1 Success').length;
+    const total = allRecords.length;
+    rows.push([]);
+    rows.push(['SUMMARY']);
+    rows.push(['Total Sessions', dogSessions.length]);
+    rows.push(['Total Scored Attempts', total]);
+    rows.push(['Successes', successes]);
+    rows.push(['Failures', total - successes]);
+    rows.push(['Success Rate', total > 0 ? Math.round(successes / total * 100) + '%' : 'N/A']);
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 22 }, // Date
+      { wch: 20 }, // Skill
+      { wch: 14 }, // Score
+      { wch: 35 }, // Notes
+      { wch: 35 }, // Location
+      { wch: 28 }, // Coords
+    ];
+
+    // Safe sheet name (max 31 chars, no special chars)
+    const sheetName = dog.replace(/[:\/?*\[\]]/g, '').substring(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const filename = 'Dog_Training_Log_' + new Date().toISOString().split('T')[0] + '.xlsx';
+  XLSX.writeFile(wb, filename);
+  showToast('📥 Downloading ' + filename);
+}
+
+// Close modal on backdrop click
+document.getElementById('addSkillModal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddSkill();
+});
+</script>
+</body>
+</html>
