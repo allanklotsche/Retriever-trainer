@@ -2,1403 +2,1660 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dog Trainer">
-<meta name="theme-color" content="#1a3a2a">
-<title>Dog Training Tracker</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#2d5a27">
+<link rel="manifest" href="/manifest.json">
+<title>Basic Retriever Training Tracks</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
-  :root {
-    --forest: #1a3a2a;
-    --sage: #4a7c5f;
-    --mint: #8bbfa0;
-    --cream: #f5f0e8;
-    --warm: #e8dcc8;
-    --gold: #c8a84b;
-    --success: #2d7a4f;
-    --failure: #8b3a3a;
-    --text: #1a2820;
-    --muted: #6b8070;
-    --card: #ffffff;
-    --border: #d4e4da;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
-    color: var(--text);
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    overflow-x: hidden;
-  }
-
-  /* Header */
-  .header {
-    background: var(--forest);
-    padding: env(safe-area-inset-top, 44px) 20px 20px;
-    color: white;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
-  }
-
-  .header-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .app-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    letter-spacing: -0.3px;
-  }
-
-  .app-title span {
-    color: var(--mint);
-  }
-
-  .paw-icon { font-size: 26px; }
-
-  .dog-name-bar {
-    margin-top: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .dog-name-bar label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--mint);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .dog-name-input {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 8px;
-    padding: 7px 12px;
-    color: white;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    width: 100%;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .dog-name-input::placeholder { color: rgba(255,255,255,0.4); }
-  .dog-name-input:focus { border-color: var(--mint); }
-
-  /* Tab bar */
-  .tab-bar {
-    display: flex;
-    background: var(--forest);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding: 0 0 env(safe-area-inset-bottom, 0);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-  }
-
-  .tab {
-    flex: 1;
-    padding: 10px 8px 12px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    background: none;
-    color: rgba(255,255,255,0.45);
-    font-family: 'DM Sans', sans-serif;
-  }
-
-  .tab.active { color: var(--mint); }
-  .tab-icon { font-size: 22px; display: block; }
-  .tab-label { font-size: 10px; font-weight: 600; letter-spacing: 0.5px; display: block; margin-top: 2px; }
-
-  /* Main content */
-  .main {
-    padding: 16px 16px calc(80px + env(safe-area-inset-bottom, 0));
-  }
-
-  .screen { display: none; }
-  .screen.active { display: block; }
-
-  /* Session date bar */
-  .session-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 14px;
-  }
-
-  .session-bar label {
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: var(--muted);
-    font-weight: 600;
-    white-space: nowrap;
-  }
-
-  .session-date-input {
-    border: none;
-    background: none;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    color: var(--text);
-    font-weight: 500;
-    outline: none;
-    cursor: pointer;
-    width: 100%;
-  }
-
-  /* Skill cards */
-  .skill-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: box-shadow 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .skill-card::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 4px;
-    background: var(--border);
-    border-radius: 16px 0 0 16px;
-    transition: background 0.2s;
-  }
-
-  .skill-card.scored-success::before { background: var(--success); }
-  .skill-card.scored-failure::before { background: var(--failure); }
-
-  .skill-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  .skill-name {
-    font-family: 'DM Serif Display', serif;
-    font-size: 19px;
-    letter-spacing: -0.2px;
-  }
-
-  .skill-number {
-    font-size: 11px;
-    color: var(--muted);
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-
-  /* Score selector */
-  .score-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-
-  .score-btn {
-    flex: 1;
-    padding: 10px 8px;
-    border-radius: 10px;
-    border: 1.5px solid var(--border);
-    background: white;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    color: var(--muted);
-  }
-
-  .score-btn.selected-success {
-    background: var(--success);
-    border-color: var(--success);
-    color: white;
-  }
-
-  .score-btn.selected-failure {
-    background: var(--failure);
-    border-color: var(--failure);
-    color: white;
-  }
-
-  .score-btn:not(.selected-success):not(.selected-failure):hover {
-    border-color: var(--sage);
-    color: var(--sage);
-  }
-
-  /* Notes textarea */
-  .notes-area {
-    width: 100%;
-    min-height: 64px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    resize: none;
-    outline: none;
-    background: var(--cream);
-    transition: border-color 0.2s;
-    line-height: 1.5;
-  }
-
-  .notes-area::placeholder { color: var(--muted); }
-  .notes-area:focus { border-color: var(--sage); background: white; }
-
-  /* Save session button */
-  .btn-primary {
-    width: 100%;
-    padding: 15px;
-    background: var(--forest);
-    color: white;
-    border: none;
-    border-radius: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 8px;
-    letter-spacing: 0.2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .btn-primary:active { transform: scale(0.98); background: var(--sage); }
-
-  /* History screen */
-  .history-header {
-    font-family: 'DM Serif Display', serif;
-    font-size: 24px;
-    margin-bottom: 4px;
-  }
-
-  .history-subhead {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  .session-record {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-
-  .session-record-header {
-    padding: 12px 16px;
-    background: var(--forest);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .session-record-dog {
-    font-family: 'DM Serif Display', serif;
-    font-size: 17px;
-  }
-
-  .session-record-date {
-    font-size: 12px;
-    color: var(--mint);
-    font-weight: 500;
-  }
-
-  .session-record-location {
-    font-size: 11px;
-    color: rgba(255,255,255,0.55);
-    margin-top: 2px;
-  }
-
-  .session-record-body {
-    padding: 12px 16px;
-  }
-
-  .record-row {
-    display: flex;
-    align-items: flex-start;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    gap: 10px;
-  }
-
-  .record-row:last-child { border-bottom: none; }
-
-  .record-skill { font-weight: 500; font-size: 14px; flex: 1; }
-
-  .record-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 9px;
-    border-radius: 20px;
-    white-space: nowrap;
-    letter-spacing: 0.3px;
-  }
-
-  .badge-success { background: #e8f5ee; color: var(--success); }
-  .badge-failure { background: #f5e8e8; color: var(--failure); }
-  .badge-none { background: var(--warm); color: var(--muted); }
-
-  .record-note { font-size: 12px; color: var(--muted); margin-top: 2px; font-style: italic; }
-
-  .delete-session-btn {
-    background: none;
-    border: none;
-    color: #c0c0c0;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 2px 4px;
-    transition: color 0.2s;
-  }
-  .delete-session-btn:hover { color: var(--failure); }
-
-  /* Stats screen */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 14px;
-    text-align: center;
-  }
-
-  .stat-number {
-    font-family: 'DM Serif Display', serif;
-    font-size: 36px;
-    color: var(--forest);
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-
-  .stat-label {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: var(--muted);
-    font-weight: 600;
-  }
-
-  .skill-stat-row {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-  }
-
-  .skill-stat-name {
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 6px;
-  }
-
-  .skill-stat-bar-bg {
-    background: var(--warm);
-    border-radius: 4px;
-    height: 8px;
-    overflow: hidden;
-    margin-bottom: 4px;
-  }
-
-  .skill-stat-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    background: var(--success);
-    transition: width 0.4s ease;
-  }
-
-  .skill-stat-counts {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--muted);
-  }
-
-  .empty-icon { font-size: 56px; margin-bottom: 12px; }
-  .empty-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--text); margin-bottom: 6px; }
-  .empty-text { font-size: 14px; line-height: 1.5; }
-
-  /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--forest);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 30px;
-    font-size: 14px;
-    font-weight: 500;
-    opacity: 0;
-    transition: all 0.3s;
-    z-index: 999;
-    white-space: nowrap;
-    pointer-events: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  }
-
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-
-  /* Add skill button */
-  .add-skill-btn {
-    width: 100%;
-    padding: 13px;
-    background: white;
-    color: var(--sage);
-    border: 1.5px dashed var(--sage);
-    border-radius: 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .add-skill-btn:active { background: var(--cream); }
-
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 200;
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: white;
-    border-radius: 20px 20px 0 0;
-    padding: 24px 20px calc(20px + env(safe-area-inset-bottom));
-    width: 100%;
-    animation: slideUp 0.3s ease;
-  }
-
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-
-  .modal-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    margin-bottom: 16px;
-  }
-
-  .modal-input {
-    width: 100%;
-    padding: 13px 14px;
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 16px;
-    outline: none;
-    color: var(--text);
-    margin-bottom: 14px;
-    transition: border-color 0.2s;
-  }
-
-  .modal-input:focus { border-color: var(--sage); }
-
-  .modal-actions { display: flex; gap: 10px; }
-
-  .btn-secondary {
-    flex: 1;
-    padding: 13px;
-    background: var(--cream);
-    color: var(--text);
-    border: none;
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .btn-add {
-    flex: 2;
-    padding: 13px;
-    background: var(--forest);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .section-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    margin-bottom: 4px;
-  }
-
-  .section-sub {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  /* Weather card */
-  .weather-card {
-    background: linear-gradient(135deg, #1a3a2a 0%, #2d5a40 60%, #3d7a55 100%);
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-    color: white;
-  }
-
-  .weather-location {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: rgba(255,255,255,0.6);
-    font-weight: 600;
-    margin-bottom: 10px;
-  }
-
-  .weather-main {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 12px;
-  }
-
-  .weather-left { flex: 1; }
-
-  .weather-temp {
-    font-family: 'DM Serif Display', serif;
-    font-size: 52px;
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-
-  .weather-condition {
-    font-size: 14px;
-    color: rgba(255,255,255,0.85);
-    font-weight: 500;
-  }
-
-  .weather-divider {
-    width: 1px;
-    height: 70px;
-    background: rgba(255,255,255,0.2);
-    margin: 0 16px;
-  }
-
-  .weather-right { flex: 1; }
-
-  .wind-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-
-  .wind-row:last-child { border-bottom: none; }
-
-  .wind-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: var(--mint);
-  }
-
-  .wind-value {
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .weather-training-tip {
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: rgba(255,255,255,0.85);
-    border-left: 3px solid var(--mint);
-    font-style: italic;
-  }
-
-
-  /* Location card */
-  .location-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 14px 16px;
-    margin-bottom: 14px;
-  }
-
-  .location-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-
-  .location-title {
-    font-weight: 700;
-    font-size: 14px;
-    color: var(--forest);
-    letter-spacing: 0.2px;
-  }
-
-  .location-refresh-btn {
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--muted);
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s;
-  }
-
-  .location-refresh-btn:active { background: var(--cream); }
-
-  .location-idle {
-    font-size: 13px;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-style: italic;
-  }
-
-  .location-address {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--forest);
-    margin-bottom: 2px;
-  }
-
-  .location-coords {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 10px;
-    font-family: monospace;
-    letter-spacing: 0.5px;
-  }
-
-  .location-detect-btn {
-    width: 100%;
-    padding: 11px;
-    background: var(--cream);
-    border: 1.5px solid var(--border);
-    border-radius: 12px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--forest);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
-  .location-detect-btn.active {
-    background: var(--forest);
-    color: white;
-    border-color: var(--forest);
-  }
-
-  .location-detect-btn:active { opacity: 0.85; }
-
-  .location-note-input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    background: var(--cream);
-    transition: border-color 0.2s;
-  }
-
-  .location-note-input:focus { border-color: var(--sage); background: white; }
-
-  .location-loading {
-    font-size: 13px;
-    color: var(--sage);
-    margin-bottom: 10px;
-    font-weight: 500;
-  }
-
-  .location-error {
-    font-size: 13px;
-    color: var(--failure);
-    margin-bottom: 10px;
-  }
-
-  /* Export button */
-  .export-btn {
-    background: var(--forest);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 8px 14px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.2px;
-    transition: all 0.2s;
-  }
-  .export-btn:active { background: var(--sage); }
-
-  /* PWA install banner */
-  .install-banner {
-    background: linear-gradient(135deg, var(--forest), var(--sage));
-    color: white;
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: relative;
-  }
-
-  .install-icon { font-size: 28px; }
-  .install-text { flex: 1; }
-  .install-title { font-weight: 600; font-size: 14px; }
-  .install-sub { font-size: 12px; opacity: 0.8; margin-top: 2px; line-height: 1.4; }
-  .install-close { background: none; border: none; color: white; opacity: 0.7; font-size: 18px; cursor: pointer; padding: 4px; }
+:root {
+  --green: #2d5a27; --green-mid: #3d7a35; --green-light: #5a9e50;
+  --green-pale: #e8f4e6; --cream: #f7f3ec; --bark: #7a5c3a;
+  --bark-light: #c4a882; --earth: #3e2e1e; --sky: #4a7fa5;
+  --sky-pale: #dceef7; --red: #b03030; --red-pale: #fdeaea;
+  --gold: #c9913a; --gray: #888; --border: #d4c9b8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Source Sans 3', sans-serif; background: var(--cream); color: var(--earth); min-height: 100vh; }
+
+/* ── HEADER ── */
+header { background: var(--green); color: var(--cream); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; gap: 16px; flex-wrap: wrap; }
+.header-title { display: flex; align-items: center; gap: 12px; }
+.paw-icon { font-size: 28px; }
+header h1 { font-family: 'Playfair Display', serif; font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
+header h1 span { display: block; font-size: 0.68rem; font-family: 'Source Sans 3', sans-serif; font-weight: 300; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; margin-top: 2px; }
+.dog-area { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dog-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7; white-space: nowrap; }
+#dog-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35); color: var(--cream); padding: 6px 10px; border-radius: 6px; font-family: 'Source Sans 3', sans-serif; font-size: 0.9rem; cursor: pointer; }
+#dog-select option { background: var(--green); }
+.btn-add-dog { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.4); color: var(--cream); padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+.btn-add-dog:hover { background: rgba(255,255,255,0.28); }
+
+/* ── INFO BAR ── */
+.info-bar { background: #1e3d1a; padding: 7px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 0.8rem; color: rgba(255,255,255,0.75); }
+.datetime-display { display: flex; align-items: center; gap: 10px; }
+.datetime-display .date-part { font-weight: 600; color: #fff; }
+.datetime-display .time-part { color: var(--bark-light); font-variant-numeric: tabular-nums; }
+.weather-display { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.weather-item { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.weather-val { color: #fff; font-weight: 600; }
+.weather-label { color: rgba(255,255,255,0.5); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.weather-loading { color: rgba(255,255,255,0.4); font-style: italic; font-size: 0.78rem; }
+.weather-loc { color: rgba(255,255,255,0.45); font-size: 0.72rem; }
+
+/* ── STATS BAR ── */
+.stats-bar { background: var(--earth); padding: 8px 24px; display: flex; gap: 24px; align-items: center; font-size: 0.8rem; color: var(--bark-light); flex-wrap: wrap; }
+.stat-item { display: flex; align-items: center; gap: 6px; }
+.stat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.stat-dot.success { background: var(--green-light); }
+.stat-dot.failure { background: var(--red); }
+.stat-dot.empty { background: #555; }
+.stat-val { color: #fff; font-weight: 600; }
+
+/* ── VIEW TABS ── */
+.view-tabs { background: #fff; border-bottom: 2px solid var(--border); padding: 0 24px; display: flex; gap: 0; }
+.view-tab { padding: 11px 22px; font-size: 0.88rem; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s; white-space: nowrap; }
+.view-tab:hover { color: var(--green); }
+.view-tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+/* ── LAYOUT ── */
+.layout { display: flex; min-height: calc(100vh - 145px); }
+aside { width: 210px; flex-shrink: 0; background: #fff; border-right: 1px solid var(--border); padding: 14px 0; position: sticky; top: 145px; height: calc(100vh - 145px); overflow-y: auto; }
+.sidebar-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--gray); padding: 0 16px 8px; }
+.cat-nav-item { display: block; padding: 8px 16px; font-size: 0.85rem; color: var(--earth); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; line-height: 1.3; }
+.cat-nav-item:hover { background: var(--green-pale); color: var(--green); border-left-color: var(--green-light); }
+.cat-nav-item.active { background: var(--green-pale); color: var(--green); border-left-color: var(--green); font-weight: 600; }
+.cat-progress-mini { float: right; font-size: 0.7rem; color: var(--gray); }
+main { flex: 1; padding: 0; overflow: hidden; }
+.main-inner { padding: 24px 28px; max-width: 960px; }
+
+/* ── SESSION PICKER BAR ── */
+.session-bar { background: #fff; border-bottom: 1px solid var(--border); padding: 10px 24px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.session-bar-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray); white-space: nowrap; }
+#session-select { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-family: 'Source Sans 3', sans-serif; font-size: 0.88rem; color: var(--earth); background: #fff; cursor: pointer; min-width: 180px; }
+.btn-new-session { background: var(--green); color: #fff; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.84rem; font-family: 'Source Sans 3', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.2s; }
+.btn-new-session:hover { background: var(--green-mid); }
+.btn-del-session { background: #fff; color: var(--red); border: 1px solid var(--red); padding: 6px 12px; border-radius: 6px; font-size: 0.82rem; font-family: 'Source Sans 3', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.btn-del-session:hover { background: var(--red-pale); }
+
+/* ── ACCORDION ── */
+.category-section { margin-bottom: 8px; scroll-margin-top: 200px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.cat-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; cursor: pointer; user-select: none; background: #fff; transition: background 0.15s; }
+.cat-header:hover { background: var(--green-pale); }
+.cat-header.open { background: var(--green); }
+.cat-header.open h2 { color: #fff; }
+.cat-header.open .cat-badge { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); color: #fff; }
+.cat-header.open .cat-chevron { color: #fff; transform: rotate(180deg); }
+.cat-chevron { margin-left: auto; font-size: 1rem; color: var(--gray); transition: transform 0.25s, color 0.15s; flex-shrink: 0; }
+.cat-header h2 { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--green); transition: color 0.15s; }
+.cat-badge { background: var(--green-pale); border: 1px solid var(--green-light); color: var(--green); font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; transition: all 0.15s; }
+.cat-score-pips { display: flex; gap: 3px; align-items: center; }
+.pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pip.s { background: var(--green-light); } .pip.f { background: var(--red); } .pip.e { background: #ccc; }
+.cat-body { max-height: 0; overflow: hidden; transition: max-height 0.32s ease; }
+.cat-body.open { max-height: 6000px; }
+.cat-body-inner { padding: 10px 14px 14px; }
+
+/* ── SKILLS TABLE ── */
+.skills-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
+.skills-table th { text-align: left; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); padding: 0 8px 4px; font-weight: 600; }
+.skill-row { background: #fff; border: 1px solid var(--border); border-radius: 8px; transition: box-shadow 0.15s; }
+.skill-row:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+.skill-row td { padding: 9px 8px; vertical-align: middle; }
+.skill-row td:first-child { padding-left: 14px; border-radius: 8px 0 0 8px; }
+.skill-row td:last-child { padding-right: 14px; border-radius: 0 8px 8px 0; }
+.skill-name { font-size: 0.92rem; font-weight: 600; color: var(--earth); min-width: 160px; }
+
+/* history icon button on skill rows */
+.btn-history { background: none; border: 1px solid var(--border); color: var(--gray); border-radius: 5px; padding: 4px 8px; font-size: 0.72rem; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+.btn-history:hover { background: var(--sky-pale); border-color: var(--sky); color: var(--sky); }
+
+.score-select { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-family: 'Source Sans 3', sans-serif; font-size: 0.85rem; cursor: pointer; background: #fff; color: var(--earth); width: 128px; }
+.score-select:focus { outline: none; border-color: var(--green); }
+.score-select.scored-1 { background: var(--green-pale); border-color: var(--green-light); color: var(--green); font-weight: 600; }
+.score-select.scored-0 { background: var(--red-pale); border-color: var(--red); color: var(--red); font-weight: 600; }
+.env-badge-fixed { background: var(--sky-pale); border: 1px solid var(--sky); color: var(--sky); font-size: 0.74rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+.env-select { border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font-family: 'Source Sans 3', sans-serif; font-size: 0.85rem; cursor: pointer; background: #fff; color: var(--earth); width: 118px; }
+.env-select:focus { outline: none; border-color: var(--sky); }
+.notes-input { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-family: 'Source Sans 3', sans-serif; font-size: 0.82rem; color: var(--earth); width: 100%; min-width: 120px; resize: vertical; min-height: 34px; overflow-y: auto; transition: border-color 0.2s; }
+.notes-input:focus { outline: none; border-color: var(--bark-light); }
+.notes-input::placeholder { color: #bbb; }
+.attempt-row { background: rgba(0,0,0,0.02); }
+.attempt-label { font-size: 0.75rem; font-weight: 600; color: var(--gray); white-space: nowrap; }
+.btn-add-attempt { background: none; border: 1px dashed var(--border); color: var(--gray); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; font-family: 'Source Sans 3', sans-serif; cursor: pointer; margin: 4px 0 2px 0; transition: all 0.15s; }
+.btn-add-attempt:hover { border-color: var(--green); color: var(--green); }
+
+/* ── SUMMARY VIEW ── */
+.summary-header { padding: 20px 28px 0; }
+.summary-header h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--green); margin-bottom: 4px; }
+.summary-header p { font-size: 0.85rem; color: var(--gray); margin-bottom: 18px; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding: 0 28px 28px; }
+.summary-cat-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.summary-cat-title { background: var(--green); color: #fff; font-family: 'Playfair Display', serif; font-size: 0.98rem; padding: 9px 14px; }
+.summary-skill-row { display: flex; flex-direction: column; align-items: flex-start; padding: 7px 14px; border-bottom: 1px solid #f0ebe3; gap: 5px; cursor: pointer; }
+.summary-skill-row:last-child { border-bottom: none; }
+.summary-skill-row:hover { background: var(--green-pale); }
+.summary-skill-name { font-size: 0.83rem; color: var(--earth); font-weight: 600; width: 100%; }
+.summary-history-pills { display: flex; gap: 3px; flex-wrap: wrap; width: 100%; }
+.hist-pill { font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 10px; white-space: nowrap; }
+.hist-pill.s { background: var(--green-pale); color: var(--green); border: 1px solid var(--green-light); }
+.hist-pill.f { background: var(--red-pale); color: var(--red); border: 1px solid #e08080; }
+.hist-pill.none { color: #ccc; font-size: 0.72rem; font-style: italic; }
+
+/* ── SKILL HISTORY MODAL ── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 28px; width: 520px; max-width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.modal h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--green); margin-bottom: 4px; }
+.modal .modal-sub { font-size: 0.82rem; color: var(--gray); margin-bottom: 18px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+.modal input[type="text"] { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:0.95rem; font-family:'Source Sans 3',sans-serif; color:var(--earth); margin-bottom:4px; box-sizing:border-box; }
+.modal input[type="text"]:focus { outline:none; border-color:var(--bark-light); }
+.btn-primary { background: var(--green); color: #fff; border: none; padding: 9px 20px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-weight: 600; transition: background 0.2s; }
+.btn-primary:hover { background: var(--green-mid); }
+.btn-cancel { background: #eee; color: var(--earth); border: none; padding: 9px 18px; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-family: 'Source Sans 3', sans-serif; transition: background 0.2s; }
+.btn-cancel:hover { background: #ddd; }
+.modal input[type="text"] { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: 'Source Sans 3', sans-serif; font-size: 1rem; margin-bottom: 14px; }
+.modal input[type="text"]:focus { outline: none; border-color: var(--green); }
+
+/* Date picker styling */
+.date-picker-wrap { margin-bottom: 14px; }
+.date-picker-wrap label { display: block; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray); margin-bottom: 6px; }
+.date-picker-wrap input[type="date"] { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-family: 'Source Sans 3', sans-serif; font-size: 0.95rem; color: var(--earth); background: #fff; cursor: pointer; }
+.date-picker-wrap input[type="date"]:focus { outline: none; border-color: var(--green); }
+
+/* History table in modal */
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.history-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray); padding: 0 8px 8px; border-bottom: 2px solid var(--border); }
+.history-table td { padding: 8px 8px; border-bottom: 1px solid #f0ebe3; vertical-align: middle; }
+.history-table tr:last-child td { border-bottom: none; }
+.score-pill { display: inline-block; font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; }
+.score-pill.s { background: var(--green-pale); color: var(--green); }
+.score-pill.f { background: var(--red-pale); color: var(--red); }
+.score-pill.n { background: #eee; color: var(--gray); }
+.no-history { text-align: center; padding: 20px; color: var(--gray); font-style: italic; font-size: 0.88rem; }
+
+/* ── EXPAND CONTROLS ── */
+.expand-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+.btn-expand-all { background: #fff; border: 1px solid var(--border); color: var(--earth); padding: 5px 13px; border-radius: 6px; font-size: 0.77rem; font-family: 'Source Sans 3', sans-serif; cursor: pointer; transition: background 0.15s; }
+.btn-expand-all:hover { background: var(--green-pale); border-color: var(--green-light); color: var(--green); }
+
+/* ── EXPORT BAR ── */
+.export-bar { position: fixed; bottom: 20px; right: 24px; display: flex; gap: 10px; z-index: 50; }
+.btn-export { background: var(--bark); color: #fff; border: none; padding: 10px 16px; border-radius: 28px; font-size: 0.84rem; cursor: pointer; font-family: 'Source Sans 3', sans-serif; font-weight: 600; box-shadow: 0 4px 18px rgba(0,0,0,0.2); transition: background 0.2s, transform 0.15s; display: flex; align-items: center; gap: 6px; }
+.btn-export:hover { background: var(--earth); transform: translateY(-1px); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--gray); }
+.empty-state .paw-big { font-size: 52px; margin-bottom: 14px; }
+
+/* ── NEW SESSION MODAL ── */
+.new-session-modal { background: #fff; border-radius: 14px; padding: 28px; width: 400px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); }
+.new-session-modal h3 { font-family: 'Playfair Display', serif; font-size: 1.25rem; color: var(--green); margin-bottom: 18px; }
+
+@media (max-width: 700px) {
+  /* ── HEADER ── */
+  .header-inner { padding: 10px 14px; gap: 10px; }
+  header h1 { font-size: 1.1rem; }
+  .dog-label { display: none; }
+  #dog-select { max-width: 120px; font-size: 0.82rem; }
+  .btn-add-dog { padding: 5px 10px; font-size: 0.78rem; }
+  .info-bar { padding: 6px 14px; gap: 10px; }
+  .weather-display { gap: 8px; }
+  .weather-label { display: none; }
+  .stats-bar { padding: 6px 14px; gap: 12px; font-size: 0.75rem; }
+
+  /* ── TABS & SESSION BAR ── */
+  .view-tabs { padding: 0 10px; }
+  .view-tab { padding: 9px 14px; font-size: 0.82rem; }
+  .session-bar { padding: 8px 14px; gap: 8px; flex-wrap: wrap; }
+  #session-select { min-width: 0; flex: 1; font-size: 0.82rem; }
+  .btn-new-session { font-size: 0.78rem; padding: 6px 10px; }
+  .btn-del-session { font-size: 0.78rem; padding: 5px 10px; }
+
+  /* ── LAYOUT: hide sidebar entirely ── */
+  aside { display: none !important; }
+  .layout { display: block; }
+  .main-inner { padding: 10px 12px; }
+
+  /* ── SUMMARY ── */
+  .summary-header { padding: 14px 14px 0; }
+  .summary-header h2 { font-size: 1.1rem; }
+  .summary-grid { grid-template-columns: 1fr; padding: 0 12px 80px; gap: 10px; }
+
+  /* ── ACCORDION HEADER ── */
+  .cat-header h2 { font-size: 0.95rem; }
+  .cat-score-pips { display: none; } /* too cramped on mobile */
+  .cat-body-inner { padding: 8px 10px 12px; }
+
+  /* ── SKILL TABLE → STACKED CARDS ── */
+  /* Hide the table header row */
+  .skills-table thead { display: none; }
+  .skills-table, .skills-table tbody { display: block; width: 100%; }
+
+  /* Each row becomes a card */
+  .skill-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; border: 1px solid var(--border); }
+  .skill-row td { display: block; padding: 0; border-radius: 0 !important; }
+
+  /* Skill name spans full width */
+  .skill-row td:first-child { grid-column: 1 / -1; padding-bottom: 4px; border-bottom: 1px solid #f0ebe3; margin-bottom: 2px; }
+  .skill-name { font-size: 0.9rem; min-width: 0; }
+
+  /* Score and Env side by side */
+  .score-select { width: 100%; font-size: 0.82rem; padding: 7px 6px; }
+  .env-select { width: 100%; font-size: 0.82rem; padding: 7px 6px; }
+  .env-badge-fixed { display: inline-block; width: 100%; text-align: center; font-size: 0.75rem; padding: 6px 8px; }
+
+  /* Notes spans full width */
+  .skill-row td:nth-child(4) { grid-column: 1 / -1; }
+  .notes-input { min-width: 0; width: 100%; font-size: 0.82rem; }
+
+  /* History button — hidden on mobile, accessible via Summary tab instead */
+  .skill-row td:nth-child(5) { display: none; }
+
+  /* ── EXPORT BAR ── */
+  .export-bar { bottom: 10px; right: 10px; left: 10px; justify-content: center; flex-wrap: wrap; gap: 6px; }
+  .btn-export { padding: 9px 12px; font-size: 0.78rem; border-radius: 20px; }
+
+  /* ── MODALS ── */
+  .modal, .new-session-modal { width: 95vw; padding: 20px; }
+}
+
+/* ── PRINT / PDF STYLES ── */
+@media print {
+  @page { size: letter portrait; margin: 0.5in; }
+
+  /* Hide everything except the summary view */
+  body > *                  { display: none !important; }
+  #print-only-header        { display: block !important; }
+  #view-summary             { display: block !important; position: static !important; }
+
+  /* Restore layout for the summary */
+  .layout                   { display: block !important; }
+  #main-area                { display: block !important; }
+  .summary-header           { padding: 0 0 10pt 0 !important; border-bottom: 1.5pt solid #2d5a27; margin-bottom: 12pt; }
+  .summary-header h2        { font-size: 16pt !important; }
+  .summary-header p         { font-size: 9pt !important; }
+  .summary-grid             { display: grid !important; grid-template-columns: repeat(3,1fr) !important; gap: 8pt !important; padding: 0 !important; }
+  .summary-cat-card         { break-inside: avoid; border: 0.5pt solid #d4c9b8 !important; border-radius: 4pt !important; }
+  .summary-cat-title        { font-size: 8.5pt !important; padding: 5pt 8pt !important;
+                              background: #2d5a27 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .summary-skill-row        { padding: 3pt 8pt !important; gap: 2pt !important; }
+  .summary-skill-name       { font-size: 7pt !important; }
+  .hist-pill                { font-size: 6pt !important; padding: 1pt 4pt !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .hist-pill.s              { background: #e8f4e6 !important; color: #2d5a27 !important; }
+  .hist-pill.f              { background: #fdeaea !important; color: #b03030 !important; }
+
+  /* Trainer / date footer */
+  #print-signature           { display: block !important; }
+}
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<div class="header">
+<header>
   <div class="header-inner">
-    <div class="app-title">Training <span>Tracks</span></div>
-    <span class="paw-icon">🐾</span>
+    <div class="header-title">
+      <span class="paw-icon">🐾</span>
+      <h1>Basic Retriever Training Tracks<span>Skills Assessment Tracker</span></h1>
+    </div>
+    <div class="dog-area">
+      <span class="dog-label">Dog:</span>
+      <select id="dog-select" onchange="switchDog(this.value)">
+        <option value="">— Select Dog —</option>
+      </select>
+      <button class="btn-add-dog" onclick="openAddDogModal()">+ Add Dog</button>
+      <button class="btn-add-dog" onclick="openTrainerModal()" style="background:var(--bark-light);color:var(--earth);">✍️ Trainer</button>
+    </div>
   </div>
-  <div class="dog-name-bar">
-    <label>Dog</label>
-    <input class="dog-name-input" id="dogName" type="text" placeholder="Enter dog's name…" autocomplete="off">
+  <div class="info-bar">
+    <div class="datetime-display">
+      <span>🗓</span><span class="date-part" id="display-date">—</span>
+      <span style="opacity:0.3">|</span>
+      <span>🕐</span><span class="time-part" id="display-time">—</span>
+    </div>
+    <div class="weather-display" id="weather-display">
+      <span class="weather-loading">Fetching weather…</span>
+    </div>
+  </div>
+  <div class="stats-bar" id="stats-bar">
+    <span style="opacity:0.5;font-size:0.82rem;">Select or add a dog to begin tracking</span>
+  </div>
+</header>
+
+<!-- VIEW TABS -->
+<div class="view-tabs" id="view-tabs" style="display:none;">
+  <div class="view-tab active" id="tab-summary" onclick="switchView('summary')">📊 Summary</div>
+  <div class="view-tab" id="tab-session" onclick="switchView('session')">📋 Session</div>
+</div>
+
+<!-- SESSION PICKER BAR (shown in session view) -->
+<div class="session-bar" id="session-bar" style="display:none;">
+  <span class="session-bar-label">Session:</span>
+  <select id="session-select" onchange="switchSession(this.value)">
+    <option value="">— Select Session —</option>
+  </select>
+  <button class="btn-new-session" onclick="openNewSessionModal()">+ New Session</button>
+  <button class="btn-del-session" onclick="deleteCurrentSession()">🗑 Delete</button>
+</div>
+
+<div class="layout">
+  <aside id="sidebar" style="display:none;">
+    <div class="sidebar-label">Categories</div>
+    <div id="cat-nav"></div>
+  </aside>
+
+  <main id="main-area">
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="empty-state">
+      <div class="paw-big">🐕</div>
+      <p>Add a dog above to start tracking training sessions.</p>
+    </div>
+
+    <!-- SUMMARY VIEW -->
+    <div id="view-summary" style="display:none;">
+      <div class="summary-header">
+        <h2 id="summary-title">Training Summary</h2>
+        <p id="summary-sub"></p>
+      </div>
+      <div class="summary-grid" id="summary-grid"></div>
+    </div>
+
+    <!-- SESSION VIEW -->
+    <div id="view-session" style="display:none;">
+      <div class="main-inner">
+        <div class="expand-controls">
+          <button class="btn-expand-all" onclick="expandAll()">▼ Expand All</button>
+          <button class="btn-expand-all" onclick="collapseAll()">▲ Collapse All</button>
+        </div>
+        <div id="skills-content"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- EXPORT BAR -->
+<div class="export-bar">
+  <button class="btn-export" onclick="exportExcel()" style="background:var(--green-mid);">📊 Export Excel</button>
+  <button class="btn-export" onclick="printSummaryPDF()" style="background:var(--green);">🖨 Save as PDF</button>
+</div>
+
+<!-- PRINT-ONLY HEADER (hidden on screen, shown when printing) -->
+<div id="print-only-header" style="display:none;"></div>
+<!-- PRINT-ONLY SIGNATURE (hidden on screen, shown when printing) -->
+<div id="print-signature" style="display:none;"></div>
+
+<!-- TRAINER NAME MODAL -->
+<div class="modal-overlay" id="trainer-modal">
+  <div class="modal" style="width:360px;">
+    <h3>✍️ Trainer Name</h3>
+    <p style="font-size:0.85rem;color:var(--gray);margin-bottom:14px;">This name will appear on the signature line of printed summaries and Excel exports.</p>
+    <input type="text" id="trainer-name-input" placeholder="Enter trainer name" maxlength="60"
+      onkeydown="if(event.key==='Enter') saveTrainerName()">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('trainer-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveTrainerName()">Save</button>
+    </div>
   </div>
 </div>
 
-<!-- Screens -->
-<div class="main">
-
-  <!-- LOG SCREEN -->
-  <div class="screen active" id="screen-log">
-    <div id="installBanner" class="install-banner">
-      <span class="install-icon">📲</span>
-      <div class="install-text">
-        <div class="install-title">Add to iPhone Home Screen</div>
-        <div class="install-sub">Tap <strong>Share</strong> → <strong>Add to Home Screen</strong> to install this app</div>
-      </div>
-      <button class="install-close" onclick="document.getElementById('installBanner').remove()">✕</button>
+<!-- iOS PDF TIP MODAL -->
+<div class="modal-overlay" id="ios-pdf-modal">
+  <div class="modal" style="width:360px;">
+    <h3>🖨 Saving as PDF on iPhone</h3>
+    <p style="font-size:0.88rem;color:var(--earth);line-height:1.6;margin-bottom:12px;">
+      Safari doesn't have a direct "Save as PDF" option, but here's the trick:
+    </p>
+    <ol style="font-size:0.88rem;color:var(--earth);line-height:2;padding-left:18px;margin-bottom:16px;">
+      <li>Tap <strong>Continue to Print</strong> below</li>
+      <li>When the print preview appears, use <strong>two fingers and pinch outward</strong> on the preview image</li>
+      <li>This opens it as a PDF</li>
+      <li>Tap the <strong>Share button</strong> (↑) and choose <strong>Save to Files</strong></li>
+    </ol>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('ios-pdf-modal')">Cancel</button>
+      <button class="btn-primary" onclick="closeModal('ios-pdf-modal'); setTimeout(()=>window.print(),100);">Continue to Print</button>
     </div>
+  </div>
+</div>
+<div class="modal-overlay" id="add-dog-modal">
+  <div class="modal" style="width:360px;">
+    <h3>🐾 Add New Dog</h3>
+    <input type="text" id="dog-name-input" placeholder="Dog's name" maxlength="40"
+      onkeydown="if(event.key==='Enter') addDog()">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('add-dog-modal')">Cancel</button>
+      <button class="btn-primary" onclick="addDog()">Add Dog</button>
+    </div>
+  </div>
+</div>
 
-    <div class="session-bar">
+<!-- NEW SESSION MODAL -->
+<div class="modal-overlay" id="new-session-modal">
+  <div class="new-session-modal">
+    <h3>📋 New Training Session</h3>
+    <div class="date-picker-wrap">
       <label>Session Date</label>
-      <input class="session-date-input" type="date" id="sessionDate">
+      <input type="date" id="new-session-date">
     </div>
-
-    <!-- Weather Widget -->
-    <div class="weather-card">
-      <div class="weather-location">📍 Sheboygan, WI · Session Conditions</div>
-      <div class="weather-main">
-        <div class="weather-left">
-          <div class="weather-temp">23°F</div>
-          <div class="weather-condition">🌨 Light Snow</div>
-        </div>
-        <div class="weather-divider"></div>
-        <div class="weather-right">
-          <div class="wind-row">
-            <span class="wind-label">WIND</span>
-            <span class="wind-value">NW 22 mph</span>
-          </div>
-          <div class="wind-row">
-            <span class="wind-label">GUSTS</span>
-            <span class="wind-value">35 mph</span>
-          </div>
-          <div class="wind-row">
-            <span class="wind-label">FEELS</span>
-            <span class="wind-value">0°F</span>
-          </div>
-        </div>
-      </div>
-      <div class="weather-training-tip">🌬️ Very windy — dogs may be distracted; keep sessions focused</div>
+    <div class="date-picker-wrap">
+      <label>Label (optional)</label>
+      <input type="text" id="new-session-label" placeholder="e.g. Morning field work" maxlength="60"
+        onkeydown="if(event.key==='Enter') createSession()">
     </div>
-
-
-    <!-- Location Widget -->
-    <div class="location-card">
-      <div class="location-header">
-        <div class="location-title">📍 Training Location</div>
-        <button class="location-refresh-btn" onclick="getLocation()" id="locationRefreshBtn">↻ Update</button>
-      </div>
-      <div id="locationStatus" class="location-idle">Tap to detect your current position</div>
-      <div id="locationDetails" style="display:none">
-        <div class="location-address" id="locationAddress"></div>
-        <div class="location-coords" id="locationCoords"></div>
-      </div>
-      <button class="location-detect-btn" id="locationDetectBtn" onclick="getLocation()">
-        <span id="locationBtnIcon">🎯</span> <span id="locationBtnText">Detect My Location</span>
-      </button>
-      <div id="locationNoteRow" style="display:none; margin-top:10px">
-        <input class="location-note-input" id="locationNote" type="text" placeholder="Add a spot name (e.g. North Field, Back Yard)…" autocomplete="off">
-      </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('new-session-modal')">Cancel</button>
+      <button class="btn-primary" onclick="createSession()">Create Session</button>
     </div>
-
-    <div class="section-title">Skills</div>
-    <div class="section-sub">Record scores for each skill</div>
-
-    <div id="skillCards"></div>
-
-    <button class="add-skill-btn" onclick="openAddSkill()">＋ Add Skill</button>
-
-    <button class="btn-primary" onclick="saveSession()">
-      💾 Save Session
-    </button>
   </div>
-
-  <!-- HISTORY SCREEN -->
-  <div class="screen" id="screen-history">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="history-header">History</div>
-      <button class="export-btn" onclick="exportToExcel()">⬇ Export xlsx</button>
-    </div>
-    <div class="history-subhead">All recorded training sessions</div>
-    <div id="historyList"></div>
-  </div>
-
-  <!-- STATS SCREEN -->
-  <div class="screen" id="screen-stats">
-    <div class="history-header">Stats</div>
-    <div class="history-subhead">Performance overview</div>
-    <div id="statsContent"></div>
-  </div>
-
 </div>
 
-<!-- Tab Bar -->
-<div class="tab-bar">
-  <button class="tab active" onclick="switchTab('log', this)">
-    <span class="tab-icon">✏️</span>
-    <span class="tab-label">Log</span>
-  </button>
-  <button class="tab" onclick="switchTab('history', this)">
-    <span class="tab-icon">📋</span>
-    <span class="tab-label">History</span>
-  </button>
-  <button class="tab" onclick="switchTab('stats', this)">
-    <span class="tab-icon">📊</span>
-    <span class="tab-label">Stats</span>
-  </button>
-</div>
-
-<!-- Add Skill Modal -->
-<div class="modal-overlay" id="addSkillModal">
+<!-- SKILL HISTORY MODAL -->
+<div class="modal-overlay" id="history-modal">
   <div class="modal">
-    <div class="modal-title">Add New Skill</div>
-    <input class="modal-input" id="newSkillName" type="text" placeholder="Skill name (e.g. Sit, Stay, Heel…)" autocomplete="off">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeAddSkill()">Cancel</button>
-      <button class="btn-add" onclick="confirmAddSkill()">Add Skill</button>
+    <h3 id="history-modal-title">Skill History</h3>
+    <div class="modal-sub" id="history-modal-sub"></div>
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Session</th>
+          <th>Attempt</th>
+          <th>Score</th>
+          <th>Environment</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="history-modal-body"></tbody>
+    </table>
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="closeModal('history-modal')">Close</button>
     </div>
   </div>
 </div>
-
-<!-- Toast -->
-<div class="toast" id="toast"></div>
 
 <script>
-// Data
-const DEFAULT_SKILLS = ['Heeling', 'Remote Sit', 'Denials'];
-let skills = JSON.parse(localStorage.getItem('tt_skills') || 'null') || [...DEFAULT_SKILLS];
-let sessions = JSON.parse(localStorage.getItem('tt_sessions') || '[]');
+// ═══════════════════════════════════════════════════════════════════
+// DATA DEFINITIONS
+// ═══════════════════════════════════════════════════════════════════
+const ENV_LW   = ["Land","Water"];
+const ENV_LWB  = ["Land","Water","Barrier"];
+const ENV_LWBC = ["Land","Water","Barrier","Cover"];
+const ENV_PF   = ["Pen","Field"];
 
-// Current log state: { skillName: { score: '1 Success'|'0 Failure'|null, notes: '' } }
-let currentLog = {};
+const CATEGORIES = [
+  { name:"Delivery", skills:[
+    {skill:"Wooden Dowel",env:ENV_LW},{skill:"Bumper",env:ENV_LW},
+    {skill:"Dokken",env:ENV_LW},{skill:"Bird",env:ENV_LW}]},
+  { name:"Steady", skills:[
+    {skill:"Brace Work",env:"Land"},{skill:"Sit to Flush",env:"Land"},
+    {skill:"Ball Roll",env:"Land"},{skill:"Denials",env:"Land"},
+    {skill:"Deny / Recall",env:"Land"},{skill:"Flyer Sit (tether)",env:"Land"},
+    {skill:"Flyer Recall (tether)",env:"Land"},{skill:"Flyer Retrieve (tether)",env:"Land"},
+    {skill:"Live flush field",env:"Land"}]},
+  { name:"Introductions", skills:[
+    {skill:"Feathers",env:"Land"},{skill:"Waterstand",env:"Land"},
+    {skill:"Ramps",env:"Land"},{skill:"Crate/Hide",env:"Land"},
+    {skill:"Boat",env:"Land"},{skill:"Tunnel",env:"Land"},
+    {skill:"Dog Trailer",env:"Land"},{skill:"Tower",env:"Land"},
+    {skill:"Pit Box",env:"Land"},{skill:"Pick Cold Game",env:"Land"},
+    {skill:"ATV",env:"Land"},{skill:"Blinds",env:"Land"},
+    {skill:"Walk Ups",env:"Land"}]},
+  { name:"Honor", skills:[
+    {skill:"Group Retrieves",env:ENV_LW},{skill:"Remote",env:ENV_LW}]},
+  { name:"Trailing Memory Basic", skills:[
+    {skill:"Single",env:"Water"},{skill:"180",env:ENV_LW},
+    {skill:"Group",env:ENV_LW},{skill:"Barriers",env:ENV_LW}]},
+  { name:"Lining Memory", skills:[
+    {skill:"Site",env:ENV_LW},{skill:"Trailing Single",env:ENV_LW},
+    {skill:"Trailing Double",env:ENV_LW},{skill:"Circle Memory Hub",env:ENV_LW},
+    {skill:"Mercedes",env:ENV_LW},{skill:"Circle Memory Double",env:ENV_LW},
+    {skill:"Triple Ladder",env:ENV_LW},{skill:"Across Water",env:ENV_LW},
+    {skill:"Double Short / Long",env:ENV_LW},{skill:"TDM",env:ENV_LW}]},
+  { name:"Diversions", skills:[
+    {skill:"Returning",env:ENV_LW},{skill:"Short / Long",env:ENV_LW},
+    {skill:"Going Out",env:ENV_LW},{skill:"Stop/Shot/Cast",env:ENV_LW},
+    {skill:"Hunt/Flush/Hunt",env:ENV_LW}]},
+  { name:"Barriers", skills:[
+    {skill:"Log",env:"Land"},{skill:"Ditch",env:"Land"},
+    {skill:"Fence",env:"Land"},{skill:"Tree Line",env:"Land"},
+    {skill:"Channels",env:"Land"},{skill:"Timber Pond/ Logs",env:"Land"},
+    {skill:"Grass Lanes",env:"Land"}]},
+  { name:"Intro to Gunfire", skills:[
+    {skill:"Starter Pistol",env:"Land"},
+    {skill:"410",env:ENV_LW},{skill:"20 ga.",env:ENV_LW},{skill:"12 ga.",env:ENV_LW},
+    {skill:"Clays",env:"Land"},{skill:"Shot Flyer",env:"Land"},
+    {skill:"Steady to Shot",env:"Land"},{skill:"Launcher",env:"Land"}]},
+  { name:"Marks", skills:[
+    {skill:"Single",env:ENV_LWBC},{skill:"Double Short / Long",env:ENV_LWBC},
+    {skill:"Single + Memory",env:ENV_LWBC},{skill:"Through Hedge",env:ENV_LWBC},
+    {skill:"Across Ditch",env:ENV_LWBC},{skill:"Across Channels",env:ENV_LWBC},
+    {skill:"Under Fence",env:ENV_LWBC},{skill:"Into Tall Cover",env:ENV_LWBC},
+    {skill:"Mark By Sound",env:ENV_LWBC},{skill:"Off Gun",env:ENV_LWBC},
+    {skill:"Across Water",env:ENV_LWBC},{skill:"Woods to Open Ground",env:ENV_LWBC},
+    {skill:"Birds",env:ENV_LWBC}]},
+  { name:"Backs", skills:[
+    {skill:"Simple Back",env:ENV_LWB},{skill:"Pull / Push",env:ENV_LWB},
+    {skill:"Pull / Push Diversion",env:ENV_LWB},{skill:"Rotational Back",env:ENV_LWB},
+    {skill:"Stop Diversion Back",env:ENV_LWB},{skill:"Stop Recall",env:ENV_LWB}]},
+  { name:"Casting", skills:[
+    {skill:"Left / Right",env:ENV_LWBC},{skill:"W/ Diversions",env:ENV_LWBC},
+    {skill:"Nigel Post Drill",env:ENV_LWBC},{skill:"Pull Cast",env:ENV_LWBC},
+    {skill:"Stop/Diversion/ R/LCast",env:ENV_LWBC}]},
+  { name:"Bird", skills:[
+    {skill:"Heel",env:ENV_PF},{skill:"Remote Sit",env:ENV_PF},
+    {skill:"Retrieves",env:ENV_PF},{skill:"Live flush",env:ENV_PF}]},
+  { name:"Bird Retrieves", skills:[
+    {skill:"Pigeon",env:ENV_LW},{skill:"Quail",env:ENV_LW},
+    {skill:"Pheasant",env:ENV_LW},{skill:"Duck",env:ENV_LW},
+    {skill:"Runner",env:ENV_LW}]},
+  { name:"Hunting Cover", skills:[
+    {skill:"Tennis Ball",env:"Land"},{skill:"Hunt In",env:"Land"},
+    {skill:"Hunts on Command",env:"Land"},{skill:"Off Ground",env:"Land"},
+    {skill:"Hunt-Diversion-Hunt",env:"Land"},{skill:"Hunt-Stop-Cast-Hunt",env:"Land"},
+    {skill:"Double in Cover Inversion",env:"Land"}]},
+  { name:"Walking Baseball", skills:[
+    {skill:"Field",env:"Land"},{skill:"Water",env:"Water"},
+    {skill:"Woods to Open Ground",env:"Woods to Open Ground"}]},
+  { name:"Switch on Doubles", skills:[
+    {skill:"Land",env:"Land"},{skill:"Water",env:"Water"}]},
+  { name:"Triples", skills:[
+    {skill:"Mercedes",env:"Land"},{skill:"Pecan Tree Field",env:"Land"},
+    {skill:"Wood Line Drill",env:"Land"}]},
+  { name:"Transitional Exercises", skills:[
+    {skill:"Dove Mark/Memory",env:"Land"},{skill:"Pheasant Walk Up",env:"Land"},
+    {skill:"Quail Walk Up",env:"Land"},{skill:"Walking Baseball Extension",env:"Land"},
+    {skill:"Channel / Levee Exposure",env:"Land"},{skill:"Short Permanent Blind",env:"Land"},
+    {skill:"Double Duck L/W",env:"Land"},{skill:"Double Dog Introduction",env:ENV_LW},
+    {skill:"Bird Dog (optional)",env:"Land"},{skill:"5 Option Upland (optional)",env:"Land"}]}
+];
 
-function initCurrentLog() {
-  currentLog = {};
-  skills.forEach(s => {
-    currentLog[s] = currentLog[s] || { score: null, notes: '' };
+const SCORE_OPTIONS = [
+  {val:"",label:"— Score —"},
+  {val:"1",label:"1 – Success"},
+  {val:"0",label:"0 – Failure"}
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// Data shape:
+//   dogs: {
+//     dogName: {
+//       sessions: [
+//         { id, date, label, skills: {
+//             "Cat||Skill||1": {score,env,notes},   // attempt 1
+//             "Cat||Skill||2": {score,env,notes},   // attempt 2
+//             "Cat||Skill||3": {score,env,notes},   // attempt 3
+//         }}
+//       ]
+//     }
+//   }
+// Legacy keys "Cat||Skill" (no attempt suffix) are treated as attempt 1.
+// ═══════════════════════════════════════════════════════════════════
+let dogs = {};
+let currentDog = null;
+let currentSessionId = null;
+let currentView = 'summary';
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function slugify(s) { return s.replace(/[^a-zA-Z0-9]/g,'_'); }
+function esc(s) { return s.replace(/'/g,"\\'"); }
+function skKey(cat, skill, attempt) {
+  // attempt is 1-based; legacy records stored without suffix are attempt 1
+  return attempt && attempt > 1 ? `${cat}||${skill}||${attempt}` : `${cat}||${skill}`;
+}
+function skKeyAttempt(cat, skill, attempt) {
+  // Always include attempt suffix for attempt >= 1
+  return `${cat}||${skill}||${attempt}`;
+}
+
+function dogData() { return dogs[currentDog] || null; }
+function sessionData() {
+  if (!currentDog || !currentSessionId) return null;
+  return (dogs[currentDog].sessions || []).find(s => s.id === currentSessionId) || null;
+}
+
+function getRecord(cat, skill, attempt) {
+  const sess = sessionData();
+  if (!sess) return {};
+  const skills = sess.skills || {};
+  // Try keyed with attempt suffix first, then fall back to legacy key (attempt 1)
+  if (attempt && attempt > 1) {
+    return skills[skKeyAttempt(cat, skill, attempt)] || {};
+  }
+  return skills[skKey(cat, skill, 1)] || skills[`${cat}||${skill}`] || {};
+}
+
+function setRecord(cat, skill, field, value, attempt) {
+  const sess = sessionData();
+  if (!sess) return;
+  if (!sess.skills) sess.skills = {};
+  // Always store with attempt suffix for clarity; attempt 1 uses legacy key for backward compat
+  const k = (attempt && attempt > 1) ? skKeyAttempt(cat, skill, attempt) : skKey(cat, skill, 1);
+  if (!sess.skills[k]) sess.skills[k] = {};
+  sess.skills[k][field] = value;
+  saveState();
+  updateStats();
+  updateSidebarProgress();
+}
+
+// Return how many attempts exist for a skill in current session (1-3)
+function getAttemptCount(cat, skill) {
+  const sess = sessionData();
+  if (!sess) return 1;
+  const skills = sess.skills || {};
+  // Check for attempt 2 and 3 keys
+  const has2 = skills[skKeyAttempt(cat, skill, 2)] !== undefined;
+  const has3 = skills[skKeyAttempt(cat, skill, 3)] !== undefined;
+  if (has3) return 3;
+  if (has2) return 2;
+  return 1;
+}
+
+// Check if an attempt has been scored
+function attemptScored(cat, skill, attempt) {
+  const rec = getRecord(cat, skill, attempt);
+  return rec.score !== undefined && rec.score !== '';
+}
+
+// ── HISTORY across all sessions (all attempts) ───────────────────
+function getSkillHistory(cat, skill) {
+  if (!currentDog) return [];
+  const sessions = dogs[currentDog].sessions || [];
+  const results = [];
+  sessions.forEach(sess => {
+    const skills = sess.skills || {};
+    [1,2,3].forEach(attempt => {
+      // Check both legacy key (attempt 1) and attempt-suffixed key
+      const keys = attempt === 1
+        ? [`${cat}||${skill}||1`, `${cat}||${skill}`]
+        : [`${cat}||${skill}||${attempt}`];
+      for (const k of keys) {
+        if (skills[k] && skills[k].score !== undefined && skills[k].score !== '') {
+          results.push({ date: sess.date, label: sess.label, attempt, ...skills[k] });
+          break;
+        }
+      }
+    });
+  });
+  return results.sort((a,b) => new Date(a.date) - new Date(b.date) || a.attempt - b.attempt);
+}
+
+// Like getSkillHistory but includes entries that have notes even without a score
+function getSkillHistoryWithNotes(cat, skill) {
+  if (!currentDog) return [];
+  const sessions = dogs[currentDog].sessions || [];
+  const results = [];
+  sessions.forEach(sess => {
+    const skills = sess.skills || {};
+    [1,2,3].forEach(attempt => {
+      const keys = attempt === 1
+        ? [`${cat}||${skill}||1`, `${cat}||${skill}`]
+        : [`${cat}||${skill}||${attempt}`];
+      for (const k of keys) {
+        const rec = skills[k];
+        if (rec && ((rec.score !== undefined && rec.score !== '') || (rec.notes && rec.notes.trim()))) {
+          results.push({ date: sess.date, label: sess.label, attempt, ...rec });
+          break;
+        }
+      }
+    });
+  });
+  return results.sort((a,b) => new Date(a.date) - new Date(b.date) || a.attempt - b.attempt);
+}
+
+// ── PERSIST ──────────────────────────────────────────────────────
+function loadState() {
+  try {
+    const saved = localStorage.getItem('retriever_tracker_v2');
+    if (saved) { const d = JSON.parse(saved); dogs = d.dogs||{}; currentDog = d.currentDog||null; currentSessionId = d.currentSessionId||null; currentView = d.currentView||'summary'; }
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('retriever_tracker_v2', JSON.stringify({dogs, currentDog, currentSessionId, currentView})); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+
+// ── DOG ─────────────────────────────────────────────────────────
+function openAddDogModal() {
+  document.getElementById('dog-name-input').value = '';
+  openModal('add-dog-modal');
+  setTimeout(() => document.getElementById('dog-name-input').focus(), 80);
+}
+function addDog() {
+  const name = document.getElementById('dog-name-input').value.trim();
+  if (!name) return;
+  if (!dogs[name]) dogs[name] = { sessions: [] };
+  currentDog = name;
+  currentSessionId = null;
+  saveState();
+  populateDogSelect();
+  closeModal('add-dog-modal');
+  renderAll();
+}
+function switchDog(name) {
+  currentDog = name || null;
+  currentSessionId = null;
+  saveState();
+  renderAll();
+}
+function populateDogSelect() {
+  const sel = document.getElementById('dog-select');
+  sel.innerHTML = '<option value="">— Select Dog —</option>';
+  Object.keys(dogs).sort().forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === currentDog) opt.selected = true;
+    sel.appendChild(opt);
   });
 }
 
-initCurrentLog();
-
-// Set today's date
-const dateInput = document.getElementById('sessionDate');
-dateInput.value = new Date().toISOString().split('T')[0];
-
-// Render skill cards
-function renderSkills() {
-  const container = document.getElementById('skillCards');
-  container.innerHTML = '';
-  skills.forEach((skill, i) => {
-    const log = currentLog[skill] || { score: null, notes: '' };
-    const cardClass = log.score === '1 Success' ? 'scored-success' : log.score === '0 Failure' ? 'scored-failure' : '';
-    container.innerHTML += `
-      <div class="skill-card ${cardClass}" id="card-${i}">
-        <div class="skill-header">
-          <div class="skill-name">${skill}</div>
-          <div class="skill-number">SKILL ${i+1}</div>
-        </div>
-        <div class="score-selector">
-          <button class="score-btn ${log.score === '1 Success' ? 'selected-success' : ''}" onclick="setScore(${i}, '1 Success')">
-            ✅ 1 Success
-          </button>
-          <button class="score-btn ${log.score === '0 Failure' ? 'selected-failure' : ''}" onclick="setScore(${i}, '0 Failure')">
-            ❌ 0 Failure
-          </button>
-        </div>
-        <textarea class="notes-area" placeholder="Notes (optional)…" onchange="setNotes(${i}, this.value)" oninput="setNotes(${i}, this.value)">${log.notes}</textarea>
-      </div>
-    `;
+// ── SESSION ──────────────────────────────────────────────────────
+function openNewSessionModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('new-session-date').value = today;
+  document.getElementById('new-session-label').value = '';
+  openModal('new-session-modal');
+  setTimeout(() => document.getElementById('new-session-date').focus(), 80);
+}
+function createSession() {
+  if (!currentDog) return;
+  const dateVal = document.getElementById('new-session-date').value;
+  if (!dateVal) { alert('Please pick a date.'); return; }
+  const label = document.getElementById('new-session-label').value.trim();
+  const sess = { id: uid(), date: dateVal, label, skills: {} };
+  dogs[currentDog].sessions.push(sess);
+  // sort sessions by date newest first
+  dogs[currentDog].sessions.sort((a,b) => new Date(b.date)-new Date(a.date));
+  currentSessionId = sess.id;
+  currentView = 'session';
+  saveState();
+  closeModal('new-session-modal');
+  renderAll();
+}
+function switchSession(id) {
+  currentSessionId = id || null;
+  saveState();
+  renderSessionContent();
+  updateStats();
+  updateSidebarProgress();
+}
+function deleteCurrentSession() {
+  if (!currentDog || !currentSessionId) return;
+  const sess = sessionData();
+  if (!sess) return;
+  const dateStr = formatDate(sess.date);
+  if (!confirm(`Delete session "${dateStr}${sess.label ? ' — '+sess.label : ''}"? This cannot be undone.`)) return;
+  dogs[currentDog].sessions = dogs[currentDog].sessions.filter(s => s.id !== currentSessionId);
+  currentSessionId = dogs[currentDog].sessions[0]?.id || null;
+  saveState();
+  renderAll();
+}
+function populateSessionSelect() {
+  const sel = document.getElementById('session-select');
+  sel.innerHTML = '<option value="">— Select Session —</option>';
+  if (!currentDog) return;
+  (dogs[currentDog].sessions || []).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = formatDate(s.date) + (s.label ? ` — ${s.label}` : '');
+    if (s.id === currentSessionId) opt.selected = true;
+    sel.appendChild(opt);
   });
 }
-
-renderSkills();
-
-function setScore(idx, score) {
-  const skill = skills[idx];
-  if (currentLog[skill].score === score) {
-    currentLog[skill].score = null;
-  } else {
-    currentLog[skill].score = score;
-  }
-  renderSkills();
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
 }
 
-function setNotes(idx, val) {
-  currentLog[skills[idx]].notes = val;
+// ── VIEW SWITCHING ────────────────────────────────────────────────
+function switchView(v) {
+  currentView = v;
+  saveState();
+  document.getElementById('tab-summary').classList.toggle('active', v==='summary');
+  document.getElementById('tab-session').classList.toggle('active', v==='session');
+  document.getElementById('view-summary').style.display = v==='summary' ? 'block' : 'none';
+  document.getElementById('view-session').style.display = v==='session' ? 'block' : 'none';
+  document.getElementById('session-bar').style.display  = v==='session' ? 'flex' : 'none';
+  document.getElementById('sidebar').style.display      = v==='session' ? 'block' : 'none';
+  if (v==='summary') renderSummary();
+  if (v==='session') { renderSessionContent(); updateSidebarProgress(); }
+  updateStats();
 }
 
-function saveSession() {
-  const dogName = document.getElementById('dogName').value.trim() || 'Unnamed Dog';
-  const date = document.getElementById('sessionDate').value;
-
-  const records = skills.map(s => ({
-    skill: s,
-    score: currentLog[s]?.score || null,
-    notes: currentLog[s]?.notes || ''
-  }));
-
-  // Capture location snapshot
-  let locationSnap = null;
-  if (currentLocation) {
-    const addr = document.getElementById('locationAddress').textContent;
-    const note = document.getElementById('locationNote').value.trim();
-    locationSnap = {
-      address: addr,
-      spotName: note,
-      lat: currentLocation.lat,
-      lon: currentLocation.lon,
-      acc: currentLocation.acc
-    };
-  }
-
-  sessions.unshift({ id: Date.now(), dog: dogName, date, records, location: locationSnap });
-  localStorage.setItem('tt_sessions', JSON.stringify(sessions));
-
-  // Reset
-  initCurrentLog();
-  renderSkills();
-  document.getElementById('sessionDate').value = new Date().toISOString().split('T')[0];
-
-  showToast('✅ Session saved!');
-}
-
-// History
-function renderHistory() {
-  const container = document.getElementById('historyList');
-  if (sessions.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📭</div>
-      <div class="empty-title">No sessions yet</div>
-      <div class="empty-text">Log your first training session using the Log tab</div>
-    </div>`;
+// ═══════════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════════
+function updateStats() {
+  const bar = document.getElementById('stats-bar');
+  if (!currentDog) {
+    bar.innerHTML = `<span style="opacity:0.5;font-size:0.82rem;">Select or add a dog to begin tracking</span>`;
     return;
   }
-  container.innerHTML = sessions.map((s, si) => `
-    <div class="session-record">
-      <div class="session-record-header">
-        <div>
-          <div class="session-record-dog">${s.dog}</div>
-          <div class="session-record-date">${formatDate(s.date)}</div>
-          ${s.location ? `<div class="session-record-location">📍 ${s.location.spotName || s.location.address || 'Location recorded'}</div>` : ''}
-        </div>
-        <button class="delete-session-btn" onclick="deleteSession(${si})">🗑</button>
-      </div>
-      <div class="session-record-body">
-        ${s.records.map(r => `
-          <div class="record-row">
-            <div>
-              <div class="record-skill">${r.skill}</div>
-              ${r.notes ? `<div class="record-note">${r.notes}</div>` : ''}
-            </div>
-            <span class="record-badge ${r.score === '1 Success' ? 'badge-success' : r.score === '0 Failure' ? 'badge-failure' : 'badge-none'}">
-              ${r.score || '—'}
-            </span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-function deleteSession(idx) {
-  if (confirm('Delete this session?')) {
-    sessions.splice(idx, 1);
-    localStorage.setItem('tt_sessions', JSON.stringify(sessions));
-    renderHistory();
-    renderStats();
-  }
-}
-
-// Stats
-function renderStats() {
-  const container = document.getElementById('statsContent');
-  if (sessions.length === 0) {
-    container.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📊</div>
-      <div class="empty-title">No data yet</div>
-      <div class="empty-text">Complete some training sessions to see stats</div>
-    </div>`;
-    return;
-  }
-
-  const totalSessions = sessions.length;
-  const allRecords = sessions.flatMap(s => s.records);
-  const scored = allRecords.filter(r => r.score);
-  const successes = scored.filter(r => r.score === '1 Success').length;
-  const rate = scored.length > 0 ? Math.round(successes / scored.length * 100) : 0;
-
-  const skillStats = {};
-  skills.forEach(s => skillStats[s] = { success: 0, failure: 0 });
-  allRecords.forEach(r => {
-    if (!skillStats[r.skill]) skillStats[r.skill] = { success: 0, failure: 0 };
-    if (r.score === '1 Success') skillStats[r.skill].success++;
-    else if (r.score === '0 Failure') skillStats[r.skill].failure++;
+  const sessions = (dogs[currentDog]?.sessions || []).length;
+  // Count unique base skills (strip attempt suffix) ever scored
+  const baseKey = k => k.replace(/\|\|\d+$/, ''); // strip ||1, ||2, ||3
+  const scored = new Set(), success = new Set(), failure = new Set();
+  (dogs[currentDog].sessions || []).forEach(s => {
+    Object.entries(s.skills||{}).forEach(([k,v]) => {
+      const bk = baseKey(k);
+      if (v.score === '1') { success.add(bk); scored.add(bk); }
+      else if (v.score === '0') { failure.add(bk); scored.add(bk); }
+    });
   });
-
-  container.innerHTML = `
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number">${totalSessions}</div>
-        <div class="stat-label">Sessions</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${rate}%</div>
-        <div class="stat-label">Success Rate</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${successes}</div>
-        <div class="stat-label">Successes</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number">${scored.length - successes}</div>
-        <div class="stat-label">Failures</div>
-      </div>
-    </div>
-    <div class="section-title" style="margin-bottom:10px">By Skill</div>
-    ${Object.entries(skillStats).filter(([,v]) => v.success + v.failure > 0).map(([skill, v]) => {
-      const total = v.success + v.failure;
-      const pct = total > 0 ? Math.round(v.success / total * 100) : 0;
-      return `<div class="skill-stat-row">
-        <div class="skill-stat-name">${skill}</div>
-        <div class="skill-stat-bar-bg">
-          <div class="skill-stat-bar-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="skill-stat-counts">
-          <span>${pct}% success</span>
-          <span>${v.success}✅ ${v.failure}❌</span>
-        </div>
-      </div>`;
-    }).join('')}
+  const total = CATEGORIES.reduce((a,c)=>a+c.skills.length,0);
+  bar.innerHTML = `
+    <span class="stat-item"><span class="stat-dot empty"></span><span class="stat-val">${sessions}</span> Sessions</span>
+    <span class="stat-item"><span class="stat-dot success"></span><span class="stat-val">${success.size}</span> Skills Passed</span>
+    <span class="stat-item"><span class="stat-dot failure"></span><span class="stat-val">${failure.size}</span> Skills Failed</span>
+    <span style="margin-left:auto;color:#aaa;">${scored.size} / ${total} skills assessed</span>
   `;
 }
 
-// Add skill modal
-function openAddSkill() {
-  document.getElementById('addSkillModal').classList.add('open');
-  document.getElementById('newSkillName').focus();
+// ═══════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  populateDogSelect();
+  const hasDog = !!currentDog;
+  document.getElementById('empty-state').style.display   = hasDog ? 'none' : 'block';
+  document.getElementById('view-summary').style.display  = 'none';
+  document.getElementById('view-session').style.display  = 'none';
+  document.getElementById('view-tabs').style.display     = hasDog ? 'flex' : 'none';
+  document.getElementById('session-bar').style.display   = 'none';
+  document.getElementById('sidebar').style.display       = 'none';
+  if (!hasDog) { updateStats(); return; }
+
+  // Auto-select most recent session if none selected
+  const sessions = dogs[currentDog].sessions || [];
+  if (!currentSessionId && sessions.length > 0) currentSessionId = sessions[0].id;
+
+  populateSessionSelect();
+  renderSidebar();
+  updateStats();
+  switchView(currentView);
 }
 
-function closeAddSkill() {
-  document.getElementById('addSkillModal').classList.remove('open');
-  document.getElementById('newSkillName').value = '';
+// ═══════════════════════════════════════════════════════════════════
+// SUMMARY VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderSummary() {
+  const sessions = (dogs[currentDog]?.sessions || []);
+  document.getElementById('summary-title').textContent = `${currentDog} — Training Summary`;
+  document.getElementById('summary-sub').textContent =
+    `${sessions.length} session${sessions.length!==1?'s':''} recorded · all skills across all sessions`;
+
+  const grid = document.getElementById('summary-grid');
+  grid.innerHTML = '';
+
+  CATEGORIES.forEach(cat => {
+    const card = document.createElement('div');
+    card.className = 'summary-cat-card';
+    card.innerHTML = `<div class="summary-cat-title">${cat.name}</div>`;
+
+    cat.skills.forEach(s => {
+      const hist = getSkillHistory(cat.name, s.skill);
+      const row = document.createElement('div');
+      row.className = 'summary-skill-row';
+
+      let pillsHtml = '';
+      if (hist.length === 0) {
+        pillsHtml = `<span class="hist-pill none">No entries</span>`;
+      } else {
+        pillsHtml = hist.map(h => {
+          const cls = h.score==='1'?'s':'f';
+          const lbl = h.score==='1'?'✓':'✗';
+          const dt  = h.date ? h.date.slice(5) : '?'; // MM-DD
+          return `<span class="hist-pill ${cls}" title="${formatDate(h.date)}${h.label?' — '+h.label:''}\n${h.env||''} ${h.notes||''}">${lbl} ${dt}</span>`;
+        }).join('');
+      }
+
+      row.innerHTML = `
+        <span class="summary-skill-name">${s.skill}</span>
+        <span class="summary-history-pills">${pillsHtml}</span>
+      `;
+      row.onclick = () => openHistoryModal(cat.name, s.skill);
+      card.appendChild(row);
+    });
+
+    grid.appendChild(card);
+  });
 }
 
-function confirmAddSkill() {
-  const name = document.getElementById('newSkillName').value.trim();
-  if (!name) return;
-  if (skills.includes(name)) { showToast('Skill already exists'); return; }
-  skills.push(name);
-  currentLog[name] = { score: null, notes: '' };
-  localStorage.setItem('tt_skills', JSON.stringify(skills));
-  closeAddSkill();
-  renderSkills();
-  showToast(`✅ "${name}" added`);
+// ═══════════════════════════════════════════════════════════════════
+// SESSION VIEW
+// ═══════════════════════════════════════════════════════════════════
+function renderSidebar() {
+  const nav = document.getElementById('cat-nav');
+  nav.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const el = document.createElement('a');
+    el.className = 'cat-nav-item';
+    el.id = `nav-${slugify(c.name)}`;
+    el.innerHTML = `${c.name}<span class="cat-progress-mini" id="nav-badge-${slugify(c.name)}">0/${c.skills.length}</span>`;
+    el.onclick = () => {
+      const body = document.getElementById(`body-${slugify(c.name)}`);
+      const hdr  = document.getElementById(`hdr-${slugify(c.name)}`);
+      if (body && !body.classList.contains('open')) { hdr.classList.add('open'); body.classList.add('open'); }
+      setTimeout(()=>document.getElementById(`cat-${slugify(c.name)}`)?.scrollIntoView({behavior:'smooth'}),50);
+      document.querySelectorAll('.cat-nav-item').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+    };
+    nav.appendChild(el);
+  });
 }
 
-document.getElementById('newSkillName').addEventListener('keydown', e => {
-  if (e.key === 'Enter') confirmAddSkill();
-});
-
-// Tab switching
-function switchTab(tab, btn) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('screen-' + tab).classList.add('active');
-  btn.classList.add('active');
-  if (tab === 'history') renderHistory();
-  if (tab === 'stats') renderStats();
+function buildPips(cat) {
+  return '<span class="cat-score-pips">' +
+    cat.skills.map(s => {
+      const r = getRecord(cat.name, s.skill, 1);
+      return `<span class="pip ${r.score==='1'?'s':r.score==='0'?'f':'e'}"></span>`;
+    }).join('') + '</span>';
 }
 
-// Toast
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+function toggleCat(slug) {
+  const hdr  = document.getElementById(`hdr-${slug}`);
+  const body = document.getElementById(`body-${slug}`);
+  const open = body.classList.contains('open');
+  hdr.classList.toggle('open',!open);
+  body.classList.toggle('open',!open);
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  return new Date(y, m-1, d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-}
+function renderSessionContent() {
+  populateSessionSelect();
+  const content = document.getElementById('skills-content');
+  content.innerHTML = '';
 
-
-// Location / GPS
-let currentLocation = null;
-
-async function getLocation() {
-  const status = document.getElementById('locationStatus');
-  const details = document.getElementById('locationDetails');
-  const btn = document.getElementById('locationDetectBtn');
-  const btnText = document.getElementById('locationBtnText');
-  const noteRow = document.getElementById('locationNoteRow');
-
-  if (!navigator.geolocation) {
-    status.className = 'location-error';
-    status.textContent = 'GPS not supported on this device';
-    status.style.display = 'block';
+  if (!currentSessionId) {
+    content.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--gray);">
+      <p style="font-size:1rem;">No session selected.</p>
+      <p style="margin-top:8px;font-size:0.88rem;">Create a new session or pick one from the dropdown above.</p>
+    </div>`;
     return;
   }
 
-  status.className = 'location-loading';
-  status.textContent = '📡 Detecting your position…';
-  status.style.display = 'block';
-  details.style.display = 'none';
-  btn.classList.add('active');
-  btnText.textContent = 'Detecting…';
+  CATEGORIES.forEach(cat => {
+    const slug = slugify(cat.name);
+    const scored = cat.skills.filter(s=>{const r=getRecord(cat.name,s.skill);return r.score!==undefined&&r.score!=='';}).length;
 
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      const lat = pos.coords.latitude.toFixed(6);
-      const lon = pos.coords.longitude.toFixed(6);
-      const acc = Math.round(pos.coords.accuracy);
-      currentLocation = { lat, lon, acc };
+    const section = document.createElement('div');
+    section.className = 'category-section';
+    section.id = `cat-${slug}`;
 
-      document.getElementById('locationCoords').textContent =
-        lat + '°N, ' + lon + '°W  ±' + acc + 'm';
+    const hdr = document.createElement('div');
+    hdr.className = 'cat-header';
+    hdr.id = `hdr-${slug}`;
+    hdr.setAttribute('onclick', `toggleCat('${slug}')`);
+    hdr.innerHTML = `
+      <h2>${cat.name}</h2>
+      <span class="cat-badge" id="badge-${slug}">${scored}/${cat.skills.length} scored</span>
+      ${buildPips(cat)}
+      <span class="cat-chevron">▼</span>`;
+    section.appendChild(hdr);
 
-      // Reverse geocode with Nominatim (free, no key needed)
-      try {
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-        const data = await res.json();
-        const a = data.address || {};
-        const parts = [a.road, a.suburb || a.neighbourhood || a.hamlet, a.city || a.town || a.village].filter(Boolean);
-        document.getElementById('locationAddress').textContent =
-          parts.length ? parts.join(', ') : data.display_name.split(',[')[0];
-      } catch (e) {
-        document.getElementById('locationAddress').textContent = 'Location detected';
-      }
+    const body = document.createElement('div');
+    body.className = 'cat-body'; body.id = `body-${slug}`;
+    const inner = document.createElement('div');
+    inner.className = 'cat-body-inner';
 
-      status.style.display = 'none';
-      details.style.display = 'block';
-      noteRow.style.display = 'block';
-      btn.classList.remove('active');
-      btnText.textContent = 'Update Location';
-    },
-    (err) => {
-      status.className = 'location-error';
-      const msgs = {
-        1: 'Location access denied — please allow in Settings',
-        2: 'Position unavailable — try again outside',
-        3: 'Timed out — try again'
-      };
-      status.textContent = '⚠️ ' + (msgs[err.code] || 'Could not get location');
-      btn.classList.remove('active');
-      btnText.textContent = 'Try Again';
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
-}
+    const table = document.createElement('table');
+    table.className = 'skills-table';
+    table.innerHTML = `<thead><tr>
+      <th style="width:190px">Skill</th>
+      <th style="width:135px">Score</th>
+      <th style="width:125px">Environment</th>
+      <th>Notes</th>
+      <th style="width:70px">History</th>
+    </tr></thead><tbody id="tbody-${slug}"></tbody>`;
+    inner.appendChild(table);
+    body.appendChild(inner);
+    section.appendChild(body);
+    content.appendChild(section);
 
-// Also store location in session save
-const _origSaveSession = saveSession;
-saveSession = function() {
-  _origSaveSession();
-};
-
-// Export to Excel - one tab per dog
-function exportToExcel() {
-  if (sessions.length === 0) { showToast('No sessions to export'); return; }
-
-  const wb = XLSX.utils.book_new();
-
-  // Group sessions by dog name
-  const byDog = {};
-  sessions.forEach(s => {
-    const key = s.dog || 'Unnamed Dog';
-    if (!byDog[key]) byDog[key] = [];
-    byDog[key].push(s);
+    const tbody = document.getElementById(`tbody-${slug}`);
+    cat.skills.forEach(s => {
+      renderSkillAttempts(tbody, cat, s);
+    });
   });
 
-  const headerStyle = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1A3A2A' } }, alignment: { horizontal: 'center' } };
+  updateSidebarProgress();
 
-  Object.entries(byDog).forEach(([dog, dogSessions]) => {
-    const rows = [];
+  // Auto-size any notes textareas that already have content
+  setTimeout(() => {
+    document.querySelectorAll('.notes-input').forEach(ta => {
+      if (ta.value) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+    });
+  }, 50);
+}
 
-    // Title row
-    rows.push([dog + ' — Training Log']);
-    rows.push([]); // blank
+function buildEnvCell(s, cat, attempt) {
+  const rec = getRecord(cat.name, s.skill, attempt);
+  if (typeof s.env === 'string') {
+    return `<span class="env-badge-fixed">${s.env}</span>`;
+  } else if (Array.isArray(s.env)) {
+    const envVal = rec.env !== undefined ? rec.env : '';
+    return `<select class="env-select" onchange="setRecord('${esc(cat.name)}','${esc(s.skill)}','env',this.value,${attempt})">
+      <option value="" ${envVal===''?'selected':''}>— Env —</option>
+      ${s.env.map(e=>`<option value="${e}" ${envVal===e?'selected':''}>${e}</option>`).join('')}
+    </select>`;
+  }
+  return `<span style="color:#ccc;font-size:0.8rem;">—</span>`;
+}
 
-    // Column headers
-    rows.push(['Date', 'Skill', 'Score', 'Notes', 'Location', 'Coordinates']);
+function renderSkillAttempts(tbody, cat, s, forceAttempts) {
+  const attemptCount = forceAttempts || getAttemptCount(cat.name, s.skill);
+  const histCount = getSkillHistory(cat.name, s.skill).length;
+  const histLabel = histCount > 0 ? `📋 ${histCount}` : '📋';
 
-    // Data rows
-    dogSessions.forEach(session => {
-      const locStr = session.location
-        ? (session.location.spotName ? session.location.spotName + ' — ' : '') + (session.location.address || '')
-        : '';
-      const coordStr = session.location
-        ? session.location.lat + ', ' + session.location.lon
-        : '';
+  for (let attempt = 1; attempt <= attemptCount; attempt++) {
+    const rec = getRecord(cat.name, s.skill, attempt);
+    const isFirst = attempt === 1;
+    const scoreCls = rec.score==='1'?'scored-1':rec.score==='0'?'scored-0':'';
+    const scoreOpts = SCORE_OPTIONS.map(o=>`<option value="${o.val}" ${rec.score===o.val?'selected':''}>${o.label}</option>`).join('');
+    const attemptLabel = attemptCount > 1 ? `<div class="attempt-label">Attempt ${attempt}</div>` : '';
 
-      session.records.forEach((r, ri) => {
-        rows.push([
-          ri === 0 ? formatDate(session.date) : '',   // Date only on first skill row
-          r.skill,
-          r.score || '—',
-          r.notes || '',
-          ri === 0 ? locStr : '',
-          ri === 0 ? coordStr : ''
-        ]);
+    // Check if row already exists — update it in place rather than removing/re-adding
+    const existingRow = tbody.querySelector(`tr[data-skill="${CSS.escape(s.skill)}"][data-attempt="${attempt}"]`);
+    if (existingRow) {
+      // Just update the score dropdown class and history button count — don't rebuild
+      const sel = existingRow.querySelector('.score-select');
+      if (sel) { sel.className = `score-select ${scoreCls}`; sel.value = rec.score || ''; }
+      const histBtn = existingRow.querySelector('.btn-history');
+      if (histBtn) histBtn.textContent = histLabel;
+      continue;
+    }
+
+    // Row doesn't exist yet — create and insert it before the "add" row if present
+    const tr = document.createElement('tr');
+    tr.className = `skill-row${attempt > 1 ? ' attempt-row' : ''}`;
+    tr.dataset.skill = s.skill;
+    tr.dataset.attempt = attempt;
+
+    tr.innerHTML = `
+      <td><span class="skill-name">${isFirst ? s.skill : ''}</span>${attemptLabel}</td>
+      <td><select class="score-select ${scoreCls}" onchange="handleScoreChange(this,'${esc(cat.name)}','${esc(s.skill)}',${attempt})">${scoreOpts}</select></td>
+      <td>${buildEnvCell(s, cat, attempt)}</td>
+      <td><textarea class="notes-input" placeholder="Add notes…"
+        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        onchange="setRecord('${esc(cat.name)}','${esc(s.skill)}','notes',this.value,${attempt})"
+      >${rec.notes||''}</textarea></td>
+      <td>${isFirst ? `<button class="btn-history" onclick="openHistoryModal('${esc(cat.name)}','${esc(s.skill)}')">${histLabel}</button>` : ''}</td>`;
+
+    // Insert before the "add" button row if it exists, otherwise before the next skill's first row
+    const addRow = tbody.querySelector(`tr[data-skill="${CSS.escape(s.skill)}"][data-attempt="add"]`);
+    if (addRow) {
+      tbody.insertBefore(tr, addRow);
+    } else {
+      // Find where this skill's rows end and insert after the last one
+      const skillRows = tbody.querySelectorAll(`tr[data-skill="${CSS.escape(s.skill)}"]`);
+      const lastSkillRow = skillRows[skillRows.length - 1];
+      if (lastSkillRow && lastSkillRow.nextSibling) {
+        tbody.insertBefore(tr, lastSkillRow.nextSibling);
+      } else {
+        tbody.appendChild(tr);
+      }
+    }
+  }
+
+  // Handle the "+ Attempt N" button row
+  const lastRec = getRecord(cat.name, s.skill, attemptCount);
+  const lastScored = lastRec.score !== undefined && lastRec.score !== '';
+  const existingAddRow = tbody.querySelector(`tr[data-skill="${CSS.escape(s.skill)}"][data-attempt="add"]`);
+
+  if (lastScored && attemptCount < 3) {
+    const nextAttempt = attemptCount + 1;
+    if (existingAddRow) {
+      // Update the button text in case attempt count changed
+      existingAddRow.querySelector('button').textContent = `+ Attempt ${nextAttempt}`;
+      existingAddRow.querySelector('button').onclick = () => addAttempt(cat.name, s.skill, nextAttempt);
+    } else {
+      const addTr = document.createElement('tr');
+      addTr.dataset.skill = s.skill;
+      addTr.dataset.attempt = 'add';
+      addTr.innerHTML = `<td colspan="5" style="padding:2px 8px;">
+        <button class="btn-add-attempt" onclick="addAttempt('${esc(cat.name)}','${esc(s.skill)}',${nextAttempt})">+ Attempt ${nextAttempt}</button>
+      </td>`;
+      // Insert after the last attempt row
+      const skillRows = tbody.querySelectorAll(`tr[data-skill="${CSS.escape(s.skill)}"]`);
+      const lastSkillRow = skillRows[skillRows.length - 1];
+      if (lastSkillRow && lastSkillRow.nextSibling) {
+        tbody.insertBefore(addTr, lastSkillRow.nextSibling);
+      } else {
+        tbody.appendChild(addTr);
+      }
+    }
+  } else if (!lastScored || attemptCount >= 3) {
+    // Remove the add button if score was cleared or max attempts reached
+    if (existingAddRow) existingAddRow.remove();
+  }
+}
+
+function addAttempt(cat, skill, attempt) {
+  const sess = sessionData();
+  if (!sess) return;
+  if (!sess.skills) sess.skills = {};
+  const k = skKeyAttempt(cat, skill, attempt);
+  if (!sess.skills[k]) sess.skills[k] = {};
+  saveState();
+  const catObj = CATEGORIES.find(c=>c.name===cat);
+  const skillObj = catObj?.skills.find(s=>s.skill===skill);
+  if (!catObj || !skillObj) return;
+  const tbody = document.getElementById(`tbody-${slugify(cat)}`);
+  renderSkillAttempts(tbody, catObj, skillObj, attempt);
+}
+
+function handleScoreChange(el, cat, skill, attempt) {
+  attempt = attempt || 1;
+  setRecord(cat, skill, 'score', el.value, attempt);
+  // Auto-save fixed env
+  const catObj = CATEGORIES.find(c=>c.name===cat);
+  if (catObj) {
+    const skillObj = catObj.skills.find(s=>s.skill===skill);
+    if (skillObj && typeof skillObj.env === 'string') {
+      const existing = getRecord(cat, skill, attempt);
+      if (!existing.env) setRecord(cat, skill, 'env', skillObj.env, attempt);
+    }
+    el.className = 'score-select';
+    if (el.value==='1') el.classList.add('scored-1');
+    else if (el.value==='0') el.classList.add('scored-0');
+    const slug = slugify(cat);
+    const scored = catObj.skills.filter(s => attemptScored(cat, s.skill, 1)).length;
+    const badge = document.getElementById(`badge-${slug}`);
+    if (badge) badge.textContent = `${scored}/${catObj.skills.length} scored`;
+    const hdr = document.getElementById(`hdr-${slug}`);
+    if (hdr) { const p = hdr.querySelector('.cat-score-pips'); if(p) p.outerHTML = buildPips(catObj); }
+    // Update the + Attempt button only — don't rebuild rows (avoids double-click bug)
+    const tbody = document.getElementById(`tbody-${slug}`);
+    if (tbody && skillObj) {
+      const lastRec = getRecord(cat, skill, attempt);
+      const lastScored = lastRec.score !== undefined && lastRec.score !== '';
+      const currentAttempts = getAttemptCount(cat, skill);
+      const existingAddRow = tbody.querySelector(`tr[data-skill="${CSS.escape(skill)}"][data-attempt="add"]`);
+      if (lastScored && currentAttempts < 3 && attempt === currentAttempts) {
+        const nextAttempt = currentAttempts + 1;
+        if (!existingAddRow) {
+          const addTr = document.createElement('tr');
+          addTr.dataset.skill = skill;
+          addTr.dataset.attempt = 'add';
+          addTr.innerHTML = `<td colspan="5" style="padding:2px 8px;">
+            <button class="btn-add-attempt" onclick="addAttempt('${esc(cat)}','${esc(skill)}',${nextAttempt})">+ Attempt ${nextAttempt}</button>
+          </td>`;
+          const skillRows = tbody.querySelectorAll(`tr[data-skill="${CSS.escape(skill)}"]`);
+          const lastSkillRow = skillRows[skillRows.length - 1];
+          if (lastSkillRow && lastSkillRow.nextSibling) {
+            tbody.insertBefore(addTr, lastSkillRow.nextSibling);
+          } else {
+            tbody.appendChild(addTr);
+          }
+        }
+      } else if (!lastScored && existingAddRow) {
+        existingAddRow.remove();
+      }
+    }
+  }
+}
+
+function updateSidebarProgress() {
+  CATEGORIES.forEach(c => {
+    const el = document.getElementById(`nav-badge-${slugify(c.name)}`);
+    if (!el) return;
+    let done = 0;
+    c.skills.forEach(s=>{ if(attemptScored(c.name, s.skill, 1)) done++; });
+    el.textContent = `${done}/${c.skills.length}`;
+    el.style.color = done===c.skills.length?'var(--green)':'var(--gray)';
+  });
+}
+
+function expandAll()  { CATEGORIES.forEach(c=>{const sl=slugify(c.name);document.getElementById(`hdr-${sl}`)?.classList.add('open');document.getElementById(`body-${sl}`)?.classList.add('open');}); }
+function collapseAll(){ CATEGORIES.forEach(c=>{const sl=slugify(c.name);document.getElementById(`hdr-${sl}`)?.classList.remove('open');document.getElementById(`body-${sl}`)?.classList.remove('open');}); }
+
+// ═══════════════════════════════════════════════════════════════════
+// SKILL HISTORY MODAL
+// ═══════════════════════════════════════════════════════════════════
+function openHistoryModal(cat, skill) {
+  document.getElementById('history-modal-title').textContent = skill;
+  document.getElementById('history-modal-sub').textContent = `Category: ${cat}`;
+  const hist = getSkillHistory(cat, skill);
+  const tbody = document.getElementById('history-modal-body');
+  tbody.innerHTML = '';
+  if (hist.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="no-history">No scored entries yet across any session.</td></tr>`;
+  } else {
+    hist.forEach(h => {
+      const cls  = h.score==='1'?'s':'f';
+      const lbl  = h.score==='1'?'Success':'Failure';
+      const tr   = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${formatDate(h.date)}</td>
+        <td style="font-size:0.82rem;color:var(--gray)">${h.label||'—'}</td>
+        <td style="font-size:0.82rem;text-align:center">${h.attempt||1}</td>
+        <td><span class="score-pill ${cls}">${lbl}</span></td>
+        <td style="font-size:0.82rem">${h.env||'—'}</td>
+        <td style="font-size:0.82rem;color:var(--gray)">${h.notes||'—'}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  openModal('history-modal');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!currentDog) { alert('Please select a dog first.'); return; }
+  let csv = 'Dog,Session Date,Session Label,Category,Skill,Score,Environment,Notes\n';
+  (dogs[currentDog].sessions||[]).forEach(sess => {
+    CATEGORIES.forEach(c => {
+      c.skills.forEach(s => {
+        const r = (sess.skills||{})[skKey(c.name,s.skill)] || {};
+        const scoreLabel = r.score==='1'?'Success':r.score==='0'?'Failure':'';
+        const envVal = r.env!==undefined?r.env:typeof s.env==='string'?s.env:'';
+        const notes = (r.notes||'').replace(/"/g,'""');
+        csv += `"${currentDog}","${sess.date}","${sess.label||''}","${c.name}","${s.skill}","${scoreLabel}","${envVal}","${notes}"\n`;
       });
-      rows.push([]); // blank row between sessions
+    });
+  });
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${currentDog.replace(/\s+/g,'_')}_all_sessions.csv`;
+  a.click();
+}
+
+async function exportExcel() {
+  if (!currentDog) { alert('Please select a dog first.'); return; }
+
+  const sessions = dogs[currentDog].sessions || [];
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const dogUpper = currentDog.toUpperCase();
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Retriever Training Tracker';
+  wb.created = now;
+
+  // ═══════════════════════════════════════════════════
+  // SUMMARY SHEET — 6 columns: A=Category B=Skill C=Pass D=Fail E=Environment F=Notes
+  // ═══════════════════════════════════════════════════
+  const ws = wb.addWorksheet('Summary', {
+    pageSetup:{
+      paperSize: 1,
+      orientation: 'portrait',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0
+    },
+    printOptions:{ gridLines:false, headings:false },
+    headerFooter:{
+      oddHeader:`&C&"Arial,Bold"&12${dogUpper} — TRAINING SUMMARY`,
+      oddFooter:`&L&"Arial"&8${dateStr}&R&"Arial"&8Page &P of &N`
+    },
+    properties:{ defaultRowHeight: 14, dyDescent: 0 }
+  });
+
+  ws.columns = [
+    {key:'A', width:22},   // Category
+    {key:'B', width:26},   // Skill
+    {key:'C', width:7},    // Pass
+    {key:'D', width:7},    // Fail
+    {key:'E', width:16},   // Environment
+    {key:'F', width:38},   // Notes
+  ];
+
+  // ── Constants ──
+  const GREEN_DARK = '2D5A27';
+  const GREEN_MID  = '3D7A35';
+  const EARTH      = '3E2E1E';
+  const WHITE      = 'FFFFFFFF';
+  const BG_ODD     = 'FFE8F2E8'; // light green
+  const BG_EVEN    = 'FFF5F0E8'; // light tan
+  const NCOLS      = 6;
+  const LAST_COL   = 6;
+  const BORDER_MED  = { style:'medium', color:{argb:'FF2D5A27'} };
+  const BORDER_BLK  = { style:'thin',   color:{argb:'FF000000'} };
+  const BORDER_NONE = { style:'thin',   color:{argb:'00FFFFFF'} }; // invisible
+
+  // ── Title row ──
+  const titleRow = ws.addRow([`BASIC RETRIEVER TRAINING TRACKS — ${dogUpper}`,'','','','','']);
+  ws.mergeCells(`A${titleRow.number}:F${titleRow.number}`);
+  titleRow.height = 30;
+  titleRow.customHeight = true;
+  titleRow.getCell(1).font      = {name:'Arial', size:15, bold:true, color:{argb:WHITE}};
+  titleRow.getCell(1).fill      = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+GREEN_DARK}};
+  titleRow.getCell(1).alignment = {horizontal:'center', vertical:'middle'};
+
+  // ── Subtitle rows ──
+  const addSub = (txt) => {
+    const r = ws.addRow([txt,'','','','','']);
+    ws.mergeCells(`A${r.number}:F${r.number}`);
+    r.height = 15;
+    r.customHeight = true;
+    r.getCell(1).font      = {name:'Arial', size:9, italic:true, color:{argb:WHITE}};
+    r.getCell(1).fill      = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+GREEN_MID}};
+    r.getCell(1).alignment = {horizontal:'center', vertical:'middle'};
+  };
+  // Build sessions subtitle with start/end dates
+  const sortedSessions = [...sessions].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const fmtShort = d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const startDate = sortedSessions.length ? fmtShort(sortedSessions[0].date) : '—';
+  const endDate   = sortedSessions.length > 1 ? fmtShort(sortedSessions[sortedSessions.length-1].date) : startDate;
+  const sessionLine = sessions.length === 1
+    ? `${sessions.length} session recorded  ·  Date: ${startDate}`
+    : `${sessions.length} sessions recorded  ·  Start Date: ${startDate}  ·  End Date: ${endDate}`;
+  const sessionSubRow = ws.addRow([sessionLine,'','','','','']);
+  ws.mergeCells(`A${sessionSubRow.number}:F${sessionSubRow.number}`);
+  sessionSubRow.height = 15;
+  sessionSubRow.customHeight = true;
+  sessionSubRow.getCell(1).font      = {name:'Arial', size:9, italic:true, color:{argb:WHITE}};
+  sessionSubRow.getCell(1).fill      = {type:'pattern', pattern:'solid', fgColor:{argb:'FF'+GREEN_MID}};
+  sessionSubRow.getCell(1).alignment = {horizontal:'center', vertical:'middle'};
+
+  const spacer = () => {
+    const r = ws.addRow(['','','','','','']);
+    r.height = 4;
+    r.customHeight = true;
+    r.eachCell({includeEmpty:true}, c => {
+      c.fill = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF0EBE0'}};
+    });
+  };
+  spacer();
+
+  // ── Category sections ──
+  let catColor = false;
+
+  CATEGORIES.forEach((cat, catIdx) => {
+    catColor = !catColor;
+    const bgArgb = catColor ? BG_ODD : BG_EVEN;
+    const skills = cat.skills;
+
+    // Add manual page break before each category (except the first)
+    // so no category is split across pages
+    if (catIdx > 0) {
+      const prevRowNum = ws.lastRow.number;
+      ws.getRow(prevRowNum).addPageBreak = true;
+      ws.addConditionalFormatting; // no-op, just getting row reference
+      // ExcelJS row page break:
+      ws.getRow(prevRowNum + 1).pageBreak = true;
+    }
+
+    // Column header row
+    const hdrRow = ws.addRow(['Category','Skill','Pass','Fail','Environment','Notes']);
+    hdrRow.height = 18;
+    hdrRow.customHeight = true;
+    hdrRow.eachCell({includeEmpty:true}, (cell, colNum) => {
+      cell.font      = {name:'Arial', size:11, bold:true, underline:true, color:{argb:'FF'+EARTH}};
+      cell.fill      = {type:'pattern', pattern:'solid', fgColor:{argb:bgArgb}};
+      cell.alignment = {horizontal:'left', vertical:'top'};
+      cell.border    = {
+        top:    BORDER_MED,
+        bottom: BORDER_BLK,
+        left:   colNum===1 ? BORDER_MED : BORDER_BLK,
+        right:  colNum===LAST_COL ? BORDER_MED : BORDER_BLK,
+      };
     });
 
-    // Summary rows
-    const allRecords = dogSessions.flatMap(s => s.records).filter(r => r.score);
-    const successes = allRecords.filter(r => r.score === '1 Success').length;
-    const total = allRecords.length;
-    rows.push([]);
-    rows.push(['SUMMARY']);
-    rows.push(['Total Sessions', dogSessions.length]);
-    rows.push(['Total Scored Attempts', total]);
-    rows.push(['Successes', successes]);
-    rows.push(['Failures', total - successes]);
-    rows.push(['Success Rate', total > 0 ? Math.round(successes / total * 100) + '%' : 'N/A']);
+    // Skill rows — split into one row per unique environment recorded
+    // Build a flat list of all sub-rows for this category first,
+    // so we can correctly identify the very last row for the bottom border.
+    const subRows = [];
+    skills.forEach((s, si) => {
+      const hist = getSkillHistoryWithNotes(cat.name, s.skill);
+      const isFirstSkill = si === 0;
 
-    const ws = XLSX.utils.aoa_to_sheet(rows);
+      if (hist.length === 0) {
+        // No history — one blank row for the skill
+        subRows.push({ s, isFirstSkill, isFirstEnv: true, env: '', pass: 0, fail: 0, notes: '', noData: true });
+      } else {
+        // Group history entries by environment.
+        // For fixed-env skills, fall back to the skill's defined env if rec.env wasn't saved.
+        const fallbackEnv = typeof s.env === 'string' ? s.env : null;
+        const envMap = {};
+        hist.forEach(h => {
+          const rawEnv = (h.env !== undefined && h.env !== '') ? h.env : (fallbackEnv || '');
+          const envKey = rawEnv.trim() || '(unset)';
+          if (!envMap[envKey]) envMap[envKey] = [];
+          envMap[envKey].push(h);
+        });
+        const envKeys = Object.keys(envMap);
+        envKeys.forEach((envKey, ei) => {
+          const envHist = envMap[envKey];
+          const pass  = envHist.filter(h=>h.score==='1').length;
+          const fail  = envHist.filter(h=>h.score==='0').length;
+          const notes = envHist.map(h=>(h.notes||'').trim()).filter(n=>n.length>0).join('. ');
+          subRows.push({ s, isFirstSkill: isFirstSkill && ei===0, isFirstEnv: ei===0, env: envKey==='(unset)'?'':envKey, pass, fail, notes, noData: false });
+        });
+      }
+    });
 
-    // Column widths
-    ws['!cols'] = [
-      { wch: 22 }, // Date
-      { wch: 20 }, // Skill
-      { wch: 14 }, // Score
-      { wch: 35 }, // Notes
-      { wch: 35 }, // Location
-      { wch: 28 }, // Coords
-    ];
+    subRows.forEach((row, rowIdx) => {
+      const { s, isFirstSkill, isFirstEnv, env, pass, fail, notes } = row;
+      const isVeryLast = rowIdx === subRows.length - 1;
 
-    // Safe sheet name (max 31 chars, no special chars)
-    const sheetName = dog.replace(/[:\/?*\[\]]/g, '').substring(0, 31);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      const dataRow = ws.addRow([
+        isFirstSkill ? cat.name : '',
+        s.skill,   // always show skill name on every row
+        pass || '',
+        fail || '',
+        env,
+        notes
+      ]);
+
+      // Set height: expand for notes, otherwise let worksheet default (14) handle it
+      const charsPerLine = 25;
+      const noteLines = notes ? Math.max(1, Math.ceil(notes.length / charsPerLine)) : 1;
+      if (noteLines > 1) {
+        dataRow.height = Math.min(120, 14 * noteLines);
+        dataRow.customHeight = true;
+      }
+
+      dataRow.eachCell({includeEmpty:true}, (cell, colNum) => {
+        cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:bgArgb}};
+        cell.font = {
+          name:'Arial', size:11,
+          bold: colNum===1 && isFirstSkill,
+          color:{argb:'FF'+EARTH}
+        };
+        cell.alignment = {
+          horizontal: (colNum===3||colNum===4) ? 'center' : 'left',
+          vertical: 'top',
+          wrapText: colNum===6
+        };
+
+        // Column A: no inner borders on blank continuation rows
+        if (colNum === 1) {
+          cell.border = {
+            top:    BORDER_NONE,
+            bottom: isVeryLast ? BORDER_MED : BORDER_NONE,
+            left:   BORDER_MED,
+            right:  isFirstSkill ? BORDER_BLK : BORDER_NONE,
+          };
+        } else {
+          cell.border = {
+            top:    BORDER_BLK,
+            bottom: isVeryLast ? BORDER_MED : BORDER_BLK,
+            left:   BORDER_BLK,
+            right:  colNum===LAST_COL ? BORDER_MED : BORDER_BLK,
+          };
+        }
+      });
+    });
+
+    spacer();
   });
 
-  const filename = 'Dog_Training_Log_' + new Date().toISOString().split('T')[0] + '.xlsx';
-  XLSX.writeFile(wb, filename);
-  showToast('📥 Downloading ' + filename);
+  // ── Trainer / Date footer ──
+  const trainerName = getTrainerName();
+  const printDate = now.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+
+  const footerSpacer = ws.addRow(['','','','','','']);
+  footerSpacer.height = 14;
+  footerSpacer.customHeight = true;
+
+  const infoStyle = {
+    font:      {name:'Arial', size:10, color:{argb:'FF'+EARTH}},
+    alignment: {horizontal:'left', vertical:'middle'}
+  };
+  const infoLabelStyle = {
+    font:      {name:'Arial', size:10, bold:true, color:{argb:'FF'+EARTH}},
+    alignment: {horizontal:'left', vertical:'middle'}
+  };
+
+  if (trainerName) {
+    const trainerRow = ws.addRow([`Trainer:`, trainerName, '', '', '', '']);
+    trainerRow.height = 15;
+    trainerRow.customHeight = true;
+    trainerRow.getCell(1).font = infoLabelStyle.font;
+    trainerRow.getCell(1).alignment = infoLabelStyle.alignment;
+    trainerRow.getCell(2).font = infoStyle.font;
+    trainerRow.getCell(2).alignment = infoStyle.alignment;
+  }
+
+  const dateRow = ws.addRow([`Date:`, printDate, '', '', '', '']);
+  dateRow.height = 15;
+  dateRow.customHeight = true;
+  dateRow.getCell(1).font = infoLabelStyle.font;
+  dateRow.getCell(1).alignment = infoLabelStyle.alignment;
+  dateRow.getCell(2).font = infoStyle.font;
+  dateRow.getCell(2).alignment = infoStyle.alignment;
+
+  // ── Write & download ──
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${currentDog.replace(/\s+/g,'_')}_training_summary.xlsx`;
+  a.click();
 }
 
-// Close modal on backdrop click
-document.getElementById('addSkillModal').addEventListener('click', function(e) {
-  if (e.target === this) closeAddSkill();
-});
+// ═══════════════════════════════════════════════════════════════════
+// DATETIME & WEATHER
+// ═══════════════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  document.getElementById('display-date').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('display-time').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock(); setInterval(updateClock,1000);
+
+function windDir(deg) { const d=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW']; return d[Math.round(deg/22.5)%16]; }
+function wxIcon(code) { if(code===0)return'☀️';if(code<=2)return'⛅';if(code===3)return'☁️';if(code<=67)return'🌧️';if(code<=77)return'❄️';if(code<=82)return'🌦️';return'⛈️'; }
+function fetchWeather(lat,lon,loc) {
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,wind_speed_10m,wind_direction_10m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`)
+    .then(r=>r.json()).then(data=>{
+      const c=data.current;
+      document.getElementById('weather-display').innerHTML=`
+        <span class="weather-item"><span>${wxIcon(c.weather_code)}</span><span class="weather-val">${Math.round(c.temperature_2m)}°F</span><span class="weather-label">Temp</span></span>
+        <span style="opacity:0.2">|</span>
+        <span class="weather-item"><span>🌧</span><span class="weather-val">${c.precipitation}"</span><span class="weather-label">Precip</span></span>
+        <span style="opacity:0.2">|</span>
+        <span class="weather-item"><span>💨</span><span class="weather-val">${Math.round(c.wind_speed_10m)} mph</span><span class="weather-label">Wind</span></span>
+        <span style="opacity:0.2">|</span>
+        <span class="weather-item"><span>🧭</span><span class="weather-val">${windDir(c.wind_direction_10m)}</span><span class="weather-label">Dir</span></span>
+        <span style="opacity:0.2">|</span>
+        <span class="weather-loc">📍 ${loc}</span>`;
+    }).catch(()=>{ document.getElementById('weather-display').innerHTML=`<span class="weather-loading">Weather unavailable</span>`; });
+}
+function initWeather() {
+  if (!navigator.geolocation) { document.getElementById('weather-display').innerHTML=`<span class="weather-loading">Geolocation not supported</span>`; return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:lat,longitude:lon}=pos.coords;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+      .then(r=>r.json()).then(g=>{ const a=g.address||{}; fetchWeather(lat,lon,a.city||a.town||a.village||a.county||'Your Location'); })
+      .catch(()=>fetchWeather(lat,lon,'Your Location'));
+  },()=>{ document.getElementById('weather-display').innerHTML=`<span class="weather-loading">Allow location for weather</span>`; });
+}
+initWeather();
+
+// ═══════════════════════════════════════════════════════════════════
+// PRINT / PDF SUMMARY
+// ═══════════════════════════════════════════════════════════════════
+function openTrainerModal() {
+  const saved = localStorage.getItem('retriever_trainer_name') || '';
+  document.getElementById('trainer-name-input').value = saved;
+  openModal('trainer-modal');
+  setTimeout(() => document.getElementById('trainer-name-input').focus(), 100);
+}
+
+function saveTrainerName() {
+  const name = document.getElementById('trainer-name-input').value.trim();
+  localStorage.setItem('retriever_trainer_name', name);
+  closeModal('trainer-modal');
+}
+
+function getTrainerName() {
+  return localStorage.getItem('retriever_trainer_name') || '';
+}
+
+function printSummaryPDF() {
+  if (!currentDog) { alert('Please select a dog first.'); return; }
+
+  if (currentView !== 'summary') switchView('summary');
+
+  const sessions = (dogs[currentDog]?.sessions || []);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  const timeStr = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  const trainerName = getTrainerName();
+
+  const sortedSess = [...sessions].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const fmtShort = d => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const startDate = sortedSess.length ? fmtShort(sortedSess[0].date) : '—';
+  const endDate   = sortedSess.length > 1 ? fmtShort(sortedSess[sortedSess.length-1].date) : startDate;
+  const sessLine  = sessions.length === 1
+    ? `${sessions.length} session recorded &nbsp;·&nbsp; Date: ${startDate}`
+    : `${sessions.length} sessions recorded &nbsp;·&nbsp; Start Date: ${startDate} &nbsp;·&nbsp; End Date: ${endDate}`;
+
+  document.getElementById('print-only-header').innerHTML = `
+    <div style="border-bottom:2pt solid #2d5a27;padding-bottom:8pt;margin-bottom:12pt;">
+      <div style="font-family:'Playfair Display',serif;font-size:16pt;color:#2d5a27;font-weight:700;">🐾 ${currentDog} — Training Summary</div>
+      <div style="font-size:8pt;color:#888;margin-top:3pt;font-family:Arial,sans-serif;">
+        ${sessLine}
+      </div>
+    </div>`;
+
+  // Footer: trainer name and date only
+  const printDate = now.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric'});
+  const trainerLine = trainerName ? `<span style="margin-right:32pt;"><strong>Trainer:</strong> ${trainerName}</span>` : '';
+  document.getElementById('print-signature').innerHTML = `
+    <div style="font-family:Arial,sans-serif;font-size:8.5pt;color:#3e2e1e;margin-top:18pt;padding-top:10pt;border-top:0.75pt solid #d4c9b8;">
+      ${trainerLine}<span><strong>Date:</strong> ${printDate}</span>
+    </div>`;
+
+  // Detect iOS — show the pinch tip before opening print dialog
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS) {
+    openModal('ios-pdf-modal');
+  } else {
+    setTimeout(() => window.print(), 100);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+loadState();
+renderAll();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW registration failed:', err));
+  });
+}
 </script>
 </body>
 </html>
